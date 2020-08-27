@@ -175,15 +175,15 @@ if ( ! function_exists( 'cao_entry_media' ) ) :
 function cao_entry_media() {
   global $post;
   $ratio = cao_thumbnail_ratio(); ?>
-  <div class="entry-media"><a<?php echo _target_blank();?> href="<?php echo esc_url( get_permalink() ); ?>">
-    <div id="fmtstrq" data-src="<?php echo esc_url(_get_post_timthumb_src()); ?>" class="placeholder lazyload" width="500" height="400" style="padding-bottom: <?php echo esc_attr( $ratio ); ?>;background-size: cover;background-position: center;background-image: url('data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==');object-fit: cover;">
-      
-        <img class="lazyload" style="object-fit:cover;" data-src="<?php echo esc_url(_get_post_timthumb_src()); ?>" src="https://zyxz.lolicon.us/wp-content/uploads/2020/07/1595242952-4def5fc3f5b1c6d.gif" alt="<?php echo get_the_title(); ?>">  
-      
+  <div class="entry-media">
+    <div class="placeholder" style="padding-bottom: <?php echo esc_attr( $ratio ); ?>;">
+      <a<?php echo _target_blank();?>  href="<?php echo esc_url( get_permalink() ); ?>">
+        <img class="lazyload" data-src="<?php echo esc_url(_get_post_timthumb_src()); ?>" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="<?php echo get_the_title(); ?>">  
+      </a>
       <?php if (_cao('post_tim_rload','0')) {  ?>
       <div class="cao-cover"><img src="<?php echo get_template_directory_uri();?>/assets/images/svg/rings.svg" width="50" height="50px"></div>
       <?php } ?>
-    </div></a>
+    </div>
     <?php get_template_part( 'parts/entry-format' ); ?>
   </div>
   <?php 
