@@ -1,0 +1,6 @@
+<?php
+    $ID = $_GET['id'];
+    $full_image_url = get_post_thumbnail($ID);
+    echo $array_image_url[0];
+    //header("location:$full_image_url") 
+?>
