@@ -72,7 +72,11 @@
       <div class="header-bottom">
         <ul>
           <li><a href="/user?action=myfav"><i class="ico_1"></i>我的收藏</a></li>
+          <?php if ((current_user_can('contributor') || current_user_can( 'publish_posts' )) && _cao('is_wp_admin_write','1')) : ?>
+          <li><a target="_blank" href="<?php echo esc_url(home_url('/wp-admin/edit.php'));?>"><i class="ico_2"></i>我的文章</a></li>
+          <?php else : ?>
           <li><a href="/user?action=mypost"><i class="ico_2"></i>我的文章</a></li>
+          <?php endif; ?>
           <li><a href="/user?action=password"><i class="ico_3"></i>安全中心</a></li>
           <li><a href="/user?action=mypay"><i class="ico_4"></i>我的订单</a></li>
           <?php if(in_array( 'administrator', $current_user->roles )): ?>

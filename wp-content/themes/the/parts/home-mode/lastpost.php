@@ -54,13 +54,14 @@ if ($is_cao_site_list_blog) {
                 <?php else: ?>
                   <h3 class="section-title"><span><?php echo $mo_postlist_no_cat['home_title_s'];?></span></h3>
                 <?php endif; ?>
-              <?php _the_cao_ads('ad_list_header', 'list-header'); endif; ?>
-              <div class="row posts-wrapper" id="newdiv">
+              <?php do_action('ripro_echo_ads', 'ad_last_1'); ?>
+              <?php endif; ?>
+              <div class="row posts-wrapper">
                 <?php while ( $psots_data->have_posts() ) : $psots_data->the_post();
                   get_template_part( 'parts/template-parts/content', $latest_layout );
                 endwhile; ?>
               </div>
-              <?php _the_cao_ads('ad_list_footer', 'list-footer');?>
+              <?php do_action('ripro_echo_ads', 'ad_last_2'); ?>
               <?php get_template_part( 'parts/pagination' ); ?>
             <?php else : ?>
               <?php get_template_part( 'parts/template-parts/content', 'none' ); ?>

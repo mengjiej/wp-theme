@@ -3,7 +3,7 @@ if (!defined('ABSPATH')) {die;} // Cannot access directly.
 
 /**
  * RiPro是一个优秀的主题，首页拖拽布局，高级筛选，自带会员生态系统，超全支付接口，你喜欢的样子我都有！
- * 正版唯一购买地址，全自动授权下载使用：https://vip.ylit.cc/
+ * 正版唯一购买地址，全自动授权下载使用：https://ritheme.com/
  * 作者唯一QQ：200933220 （油条）
  * 承蒙您对本主题的喜爱，我们愿向小三一样，做大哥的女人，做大哥网站中最想日的一个。
  * 能理解使用盗版的人，但是不能接受传播盗版，本身主题没几个钱，主题自有支付体系和会员体系，盗版风险太高，鬼知道那些人乱动什么代码，无利不起早。
@@ -518,6 +518,10 @@ add_action('wp_ajax_nopriv_cao_write_post', 'cao_write_post');
 // 上传头像avatar_photo
 function update_avatar_photo()
 {
+    if (_cao('disabled_up_ava')) {
+        echo json_encode(array('status' => '0', 'msg' => '头像功能关闭'));exit;
+    }
+    
     header('Content-type:application/json; Charset=utf-8');
     global $current_user;
     $uid = $current_user->ID;
@@ -870,7 +874,12 @@ function charge_pay()
     $charge_rate    = (int) _cao('site_change_rate'); //充值比例
     $order_price    = sprintf('%0.2f', $charge_num / $charge_rate); // 订单价格 换算人民币,保留两位小数点
     $order_trade_no = date("ymdhis") . mt_rand(100, 999) . mt_rand(100, 999) . mt_rand(100, 999); // 订单号
-    $order_name     = get_bloginfo('name') . '-余额充值'; //订单名称
+    if (_cao('is_ripro_diy_shop_name')) {
+        $order_name = _cao('ripro_diy_shop_name_charge'); //自定义订单名称   
+    }else{
+        $order_name = get_bloginfo('name') . '-余额充值'; //订单名称   
+    }
+    
     $order_type     = 'charge'; //类型 充值
     /////////商品属性END/////////
 
@@ -1256,6 +1265,151 @@ function charge_pay()
         exit;
     }
 
+    //讯虎支付 支付宝
+    if ($pay_type == 9) {
+        require_once get_template_directory() . '/inc/class/xunhupay.class.php';
+        // 获取后台支付配置
+        $XHpayConfig = _cao('xunhupay_ali');
+         // 添加订单 ShopOrder
+        if (!$ShopOrder->add($uid, $order_trade_no, $order_type, $order_price, $pay_type)) {
+            echo json_encode(array('status' => '0', 'msg' => '订单创建失败'));exit;
+        }
+            
+        $data=array(
+            'mchid'         => $XHpayConfig['mchid'],
+            'out_trade_no'  => $order_trade_no,
+            'type'          => 'alipay',
+            'total_fee'     => $order_price*100,
+            'body'          => $order_name,
+            'notify_url'    => get_template_directory_uri() . '/shop/xunhupay/notify4.php',
+            'nonce_str'     => str_shuffle(time())
+        );
+
+        $hashkey =$XHpayConfig['private_key'];
+        if(XH_Payment_Api::is_app_client()){
+                 $data['redirect_url']=get_template_directory_uri() . '/shop/xunhupay/return2.php';
+                 $data['sign']     = XH_Payment_Api::generate_xh_hash_new($data,$hashkey);
+                 $pay_url     = XH_Payment_Api::data_link('https://admin.xunhuweb.com/alipaycashier', $data);
+                 $pay_url1    = htmlspecialchars_decode($pay_url,ENT_NOQUOTES);
+                 echo json_encode(array('status' => '1', 'type' => '2', 'rurl' => $pay_url1, 'qrcode' => '', 'msg' => $order_trade_no));
+                 exit;
+         }
+        $data['sign']     = XH_Payment_Api::generate_xh_hash_new($data,$hashkey);
+        $url              = $XHpayConfig['url_do'].'/pay/payment';
+
+        try {
+            $response     = XH_Payment_Api::http_post_json($url, json_encode($data));
+
+
+            /**
+             * 支付回调数据
+             * @var array(
+             *      order_id,//支付系统订单ID
+             *      url//支付跳转地址
+             *  )
+             */
+            $result       = $response?json_decode($response,true):null;
+
+            if(!$result){
+                throw new Exception('Internal server error',500);
+            }
+
+            $hash         = XH_Payment_Api::generate_xh_hash_new($result,$hashkey);
+            if(!isset( $result['sign'])|| $hash!=$result['sign']){
+                throw new Exception(__('Invalid sign!',XH_Wechat_Payment),40029);
+            }
+
+            if($result['err_code']!=0){
+                throw new Exception($result['errmsg'],$result['errcode']);
+            }
+            $pay_url =$result['code_url'];
+            //获取二维码地址
+            $pay_qrcode_url = getQrcode($pay_url);
+            $iconstr = '<img src="'.get_template_directory_uri() . '/assets/icons/alipay.png" class="qr-pay">';
+            $html_str = '<div class="qrcon"> <h5> '.$iconstr.' </h5> <div class="title">支付宝扫码支付 '.$order_price.' 元</div> <div align="center" class="qrcode"> <img src="'.$pay_qrcode_url.'"/> </div> <div class="bottom alipay"> 请使用支付宝扫一扫<br>扫描二维码支付</br> </div> </div>';
+            echo json_encode(array('status' => '1', 'type' => '1', 'msg' => $html_str, 'img' => $pay_qrcode_url, 'num' => $order_trade_no));
+            exit;
+        } catch (Exception $e) {
+            echo "errcode:{$e->getCode()},errmsg:{$e->getMessage()}";exit;
+            //TODO:处理支付调用异常的情况
+        }
+        exit;
+    }
+    
+    //讯虎支付 微信支付
+    if ($pay_type == 10) {
+        $http_type = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')) ? 'https://' : 'http://';
+        require_once get_template_directory() . '/inc/class/xunhupay.class.php';
+        // 获取后台支付配置
+        $XHpayConfig = _cao('xunhupay_wx');
+         // 添加订单 ShopOrder
+        if (!$ShopOrder->add($uid, $order_trade_no, $order_type, $order_price, $pay_type)) {
+            echo json_encode(array('status' => '0', 'msg' => '订单创建失败'));exit;
+        }
+            
+        $data=array(
+            'mchid'         => $XHpayConfig['mchid'],
+            'out_trade_no'  => $order_trade_no,
+            'type'          => 'wechat',
+            'total_fee'     => $order_price*100,
+            'body'          => $order_name,
+            'notify_url'    => get_template_directory_uri() . '/shop/xunhupay/notify3.php',
+            'nonce_str'     => str_shuffle(time())
+        );
+
+        $hashkey =$XHpayConfig['private_key'];
+        if(XH_Payment_Api::is_wechat_app()){
+            $data['redirect_url']=get_template_directory_uri() . '/shop/xunhupay/return2.php';
+            $data['sign']     = XH_Payment_Api::generate_xh_hash_new($data,$hashkey);
+            $pay_url = XH_Payment_Api::data_link('https://admin.xunhuweb.com/pay/cashier',$data);
+            $pay_url1 = htmlspecialchars_decode($pay_url,ENT_NOQUOTES);
+            echo json_encode(array('status' => '1', 'type' => '2', 'rurl' => $pay_url1, 'qrcode' => '', 'msg' => $order_trade_no));
+            exit; 
+
+        }
+        if(XH_Payment_Api::is_app_client()){
+            $url= get_template_directory_uri() . '/inc/xunhupay/h5.php?out_trade_no='.$order_trade_no.'&total_fee='.$order_price.'&title='.$order_name.'&type=1';
+            echo json_encode(array('status' => '1', 'type' => '2', 'rurl' => $url, 'qrcode' => '', 'msg' => $order_trade_no));
+            exit; 
+        }
+        $data['sign']     = XH_Payment_Api::generate_xh_hash_new($data,$hashkey);
+        $url              = $XHpayConfig['url_do'].'/pay/payment';
+        try {
+            $response     = XH_Payment_Api::http_post_json($url, json_encode($data));
+            /**
+             * 支付回调数据
+             * @var array(
+             *      order_id,//支付系统订单ID
+             *      url//支付跳转地址
+             *  )
+             */
+            $result       = $response?json_decode($response,true):null;
+
+            if(!$result){
+                throw new Exception('Internal server error',500);
+            }
+            $sign             = XH_Payment_Api::generate_xh_hash_new($result,$hashkey);
+            if(!isset( $result['sign'])|| $sign!=$result['sign']){
+                throw new Exception(__('Invalid sign!',XH_Wechat_Payment),40029);
+            }
+            if($result['return_code']!='SUCCESS'){
+                throw new Exception($result['err_msg'],$result['err_code']);
+            }
+            $url =$result['code_url'];
+            //获取二维码地址
+            $pay_qrcode_url = getQrcode($url);
+            $iconstr = '<img src="'.get_template_directory_uri() . '/assets/icons/weixin.png" class="qr-pay">';
+            $html_str = '<div class="qrcon"> <h5> '.$iconstr.' </h5> <div class="title">微信扫码支付 '.$order_price.' 元</div> <div align="center" class="qrcode"> <img src="'.$pay_qrcode_url.'"/> </div> <div class="bottom weixinpay"> 请使用微信扫一扫<br>扫描二维码支付</br> </div> </div>';
+            echo json_encode(array('status' => '1', 'type' => '1', 'msg' => $html_str, 'img' => $pay_qrcode_url, 'num' => $order_trade_no));
+            exit;
+        } catch (Exception $e) {
+            echo "errcode:{$e->getCode()},errmsg:{$e->getMessage()}";exit;
+            //TODO:处理支付调用异常的情况
+        }
+        exit;
+    }
+
+
     //码支付 codepay 微信 7 8支付宝
     if ($pay_type == 7 || $pay_type == 8) {
         // 获取后台支付配置
@@ -1291,14 +1445,15 @@ function charge_pay()
         $resultData = json_decode($result,true);
 
         if ($resultData && $resultData['status'] == 0) {
+
             if ($paymethod == 3) {
                 $iconstr = '<img src="'.get_template_directory_uri() . '/assets/icons/weixin.png" class="qr-pay">';
-                $html_str = '<div class="qrcon"> <h5> '.$iconstr.' </h5> <div class="title">微信扫码支付 '.$order_price.' 元</div> <div align="center" class="qrcode"> <img src="'.$resultData['qrcode'].'"/> </div> <div class="bottom weixinpay"> 请使用微信扫一扫<br>扫描二维码支付</br> </div> </div>';
+                $html_str = '<div class="qrcon"> <h5> '.$iconstr.' </h5> <div class="title">微信扫码支付 '.$resultData['money'].' 元</div> <div align="center" class="qrcode"> <img src="'.$resultData['qrcode'].'"/> </div> <div class="bottom weixinpay">请使用微信扫一扫</br><b style="font-size: 12px;color: #f10;">请在五分钟内支付指定金额</b></br><b style=" font-size: 12px; ">手机用户可保存上方二维码到手机中</b></br><b style=" font-size: 12px; ">在微信扫一扫中选择“相册”即可</b> </div> </div>';
                 echo json_encode(array('status' => '1', 'type' => '1', 'msg' => $html_str, 'img' => $resultData['qrcode'], 'num' => $order_trade_no));
                 exit;
             }else{
                 $iconstr = '<img src="'.get_template_directory_uri() . '/assets/icons/alipay.png" class="qr-pay">';
-                $html_str = '<div class="qrcon"> <h5> '.$iconstr.' </h5> <div class="title">支付宝扫码支付 '.$order_price.' 元</div> <div align="center" class="qrcode"> <img src="'.$resultData['qrcode'].'"/> </div> <div class="bottom alipay"> 请使用支付宝扫一扫<br>扫描二维码支付</br> </div> </div>';
+                $html_str = '<div class="qrcon"> <h5> '.$iconstr.' </h5> <div class="title">支付宝扫码支付 '.$resultData['money'].' 元</div> <div align="center" class="qrcode"> <img src="'.$resultData['qrcode'].'"/> </div> <div class="bottom alipay"> 请使用支付宝扫一扫<br><b style="font-size: 12px;color: #f10;">请在五分钟内支付指定金额</b></br><b style=" font-size: 12px; ">手机用户可保存上方二维码到手机中</b></br><b style=" font-size: 12px; ">在支付宝扫一扫中选择“相册”即可</b> </div> </div>';
                 echo json_encode(array('status' => '1', 'type' => '1', 'msg' => $html_str , 'img' => $resultData['qrcode'], 'num' => $order_trade_no));
                 exit;
             }
@@ -1359,7 +1514,7 @@ function go_post_pay()
     /////////商品属性START///////
     $charge_rate    = (int) _cao('site_change_rate'); //网站比例
     //获取资源文章价格等信息
-    $post_price   = get_post_meta($post_id, 'cao_price', true);
+    $post_price = $_post_price = get_post_meta($post_id, 'cao_price', true);
     $post_price = ($post_price) ? $post_price : '0' ;
     // 计算价格 验证会员折扣权限
     $post_vip_rate = get_post_meta($post_id, 'cao_vip_rate', true);
@@ -1387,7 +1542,12 @@ function go_post_pay()
 
     $order_price    = sprintf('%0.2f', $post_price / $charge_rate); // 订单价格 换算人民币,保留两位小数点
     $order_trade_no = date("ymdhis") . mt_rand(100, 999) . mt_rand(100, 999) . mt_rand(100, 999); // 订单号
-    $order_name     = get_bloginfo('name') . '-资源购买'; //订单名称
+    if (_cao('is_ripro_diy_shop_name')) {
+        $order_name = _cao('ripro_diy_shop_name_pay'); //自定义订单名称   
+    }else{
+        $order_name = get_bloginfo('name') . '-资源购买'; //订单名称   
+    }
+
     $order_type     = 'other'; //类型 购买 其他
 
     $post_vid = isset($_POST['post_vid']) ? (int) $_POST['post_vid'] : null;
@@ -1414,6 +1574,7 @@ function go_post_pay()
         }else{
             $order_name = get_bloginfo('name') . '-开通'._cao('site_vip_name').'【'.$pay_daynum.'天】'; //订单名称
         }
+        $_post_price = $post_price;
     }
     // end
 
@@ -1422,7 +1583,7 @@ function go_post_pay()
     }
 
     //写入本地文章购买记录
-    if (!$PostPay->add($post_price, $order_vip_rate,$order_trade_no,$pay_type)) {
+    if (!$PostPay->add($_post_price, $order_vip_rate,$order_trade_no,$pay_type)) {
         echo json_encode(array('status' => '0', 'msg' => '添加订单异常'));exit;
     }
 
@@ -1538,7 +1699,7 @@ function go_post_pay()
         $pay = new \Yurun\PaySDK\Weixin\SDK($params);
         $the_openid = get_user_meta($uid, 'open_mpweixin_openid', true);
         // 判断是否开启手机版跳转 //微信当前免登陆h5跳转有问题 免登陆下不允许h5支付
-        if (wp_is_mobile() && $wxPayConfig['is_mobile']) {
+        if (wp_is_mobile() && $wxPayConfig['is_mobile']  && !is_weixin_view()) {
             // 添加订单 ShopOrder
             if (!$ShopOrder->add($uid, $order_trade_no, $order_type, $order_price, $pay_type)) {
                 echo json_encode(array('status' => '0', 'msg' => '订单创建失败'));exit;
@@ -1738,6 +1899,148 @@ function go_post_pay()
         exit;
     }
 
+    //讯虎支付 支付宝
+    if ($pay_type == 9) {
+        require_once get_template_directory() . '/inc/class/xunhupay.class.php';
+        // 获取后台支付配置
+        $XHpayConfig = _cao('xunhupay_ali');
+         // 添加订单 ShopOrder
+        if (!$ShopOrder->add($uid, $order_trade_no, $order_type, $order_price, $pay_type)) {
+            echo json_encode(array('status' => '0', 'msg' => '订单创建失败'));exit;
+        }
+            
+        $data=array(
+            'mchid'         => $XHpayConfig['mchid'],
+            'out_trade_no'  => $order_trade_no,
+            'type'          => 'alipay',
+            'total_fee'     => $order_price*100,
+            'body'          => $order_name,
+            'notify_url'    => get_template_directory_uri() . '/shop/xunhupay/notify4.php',
+            'nonce_str'     => str_shuffle(time())
+        );
+
+        $hashkey =$XHpayConfig['private_key'];
+        if(XH_Payment_Api::is_app_client()){
+                 $data['redirect_url']=get_template_directory_uri() . '/shop/xunhupay/return2.php';
+                 $data['sign']     = XH_Payment_Api::generate_xh_hash_new($data,$hashkey);
+                 $pay_url     = XH_Payment_Api::data_link('https://admin.xunhuweb.com/alipaycashier', $data);
+                 $pay_url1    = htmlspecialchars_decode($pay_url,ENT_NOQUOTES);
+                 echo json_encode(array('status' => '1', 'type' => '2', 'rurl' => $pay_url1, 'qrcode' => '', 'msg' => $order_trade_no));
+                 exit;
+         }
+        $data['sign']     = XH_Payment_Api::generate_xh_hash_new($data,$hashkey);
+        $url              = $XHpayConfig['url_do'].'/pay/payment';
+        try {
+            $response     = XH_Payment_Api::http_post_json($url, json_encode($data));
+            /**
+             * 支付回调数据
+             * @var array(
+             *      order_id,//支付系统订单ID
+             *      url//支付跳转地址
+             *  )
+             */
+            $result       = $response?json_decode($response,true):null;
+
+            if(!$result){
+                throw new Exception('Internal server error',500);
+            }
+
+            $hash         = XH_Payment_Api::generate_xh_hash_new($result,$hashkey);
+            if(!isset( $result['sign'])|| $hash!=$result['sign']){
+                throw new Exception(__('Invalid sign!',XH_Wechat_Payment),40029);
+            }
+
+            if($result['err_code']!=0){
+                throw new Exception($result['errmsg'],$result['errcode']);
+            }
+            $pay_url =$result['code_url'];
+            //获取二维码地址
+            $pay_qrcode_url = getQrcode($pay_url);
+            $iconstr = '<img src="'.get_template_directory_uri() . '/assets/icons/alipay.png" class="qr-pay">';
+            $html_str = '<div class="qrcon"> <h5> '.$iconstr.' </h5> <div class="title">支付宝扫码支付 '.$order_price.' 元</div> <div align="center" class="qrcode"> <img src="'.$pay_qrcode_url.'"/> </div> <div class="bottom alipay"> 请使用支付宝扫一扫<br>扫描二维码支付</br> </div> </div>';
+            echo json_encode(array('status' => '1', 'type' => '1', 'msg' => $html_str, 'img' => $pay_qrcode_url, 'num' => $order_trade_no));
+            exit;
+        } catch (Exception $e) {
+            echo "errcode:{$e->getCode()},errmsg:{$e->getMessage()}";exit;
+            //TODO:处理支付调用异常的情况
+        }
+        exit;
+    }
+    
+    //讯虎支付 微信支付
+    if ($pay_type == 10) {
+        $http_type = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')) ? 'https://' : 'http://';
+        require_once get_template_directory() . '/inc/class/xunhupay.class.php';
+        // 获取后台支付配置
+        $XHpayConfig = _cao('xunhupay_wx');
+         // 添加订单 ShopOrder
+        if (!$ShopOrder->add($uid, $order_trade_no, $order_type, $order_price, $pay_type)) {
+            echo json_encode(array('status' => '0', 'msg' => '订单创建失败'));exit;
+        }
+            
+        $data=array(
+            'mchid'         => $XHpayConfig['mchid'],
+            'out_trade_no'  => $order_trade_no,
+            'type'          => 'wechat',
+            'total_fee'     => $order_price*100,
+            'body'          => $order_name,
+            'notify_url'    => get_template_directory_uri() . '/shop/xunhupay/notify3.php',
+            'nonce_str'     => str_shuffle(time())
+        );
+
+        $hashkey =$XHpayConfig['private_key'];
+        if(XH_Payment_Api::is_wechat_app()){
+            $data['redirect_url']=get_template_directory_uri() . '/shop/xunhupay/return2.php';
+            $data['sign']     = XH_Payment_Api::generate_xh_hash_new($data,$hashkey);
+            $pay_url = XH_Payment_Api::data_link('https://admin.xunhuweb.com/pay/cashier',$data);
+            $pay_url1 = htmlspecialchars_decode($pay_url,ENT_NOQUOTES);
+            echo json_encode(array('status' => '1', 'type' => '2', 'rurl' => $pay_url1, 'qrcode' => '', 'msg' => $order_trade_no));
+            exit; 
+
+        }
+        if(XH_Payment_Api::is_app_client()){
+            $url= get_template_directory_uri() . '/inc/xunhupay/h5.php?out_trade_no='.$order_trade_no.'&total_fee='.$order_price.'&title='.$order_name.'&type=2';
+            echo json_encode(array('status' => '1', 'type' => '2', 'rurl' => $url, 'qrcode' => '', 'msg' => $order_trade_no));
+            exit; 
+        }
+        $data['sign']     = XH_Payment_Api::generate_xh_hash_new($data,$hashkey);
+        $url              = $XHpayConfig['url_do'].'/pay/payment';
+        try {
+            $response     = XH_Payment_Api::http_post_json($url, json_encode($data));
+            /**
+             * 支付回调数据
+             * @var array(
+             *      order_id,//支付系统订单ID
+             *      url//支付跳转地址
+             *  )
+             */
+            $result       = $response?json_decode($response,true):null;
+
+            if(!$result){
+                throw new Exception('Internal server error',500);
+            }
+            $sign             = XH_Payment_Api::generate_xh_hash_new($result,$hashkey);
+            if(!isset( $result['sign'])|| $sign!=$result['sign']){
+                throw new Exception(__('Invalid sign!',XH_Wechat_Payment),40029);
+            }
+            if($result['return_code']!='SUCCESS'){
+                throw new Exception($result['err_msg'],$result['err_code']);
+            }
+            $url =$result['code_url'];
+            //获取二维码地址
+            $pay_qrcode_url = getQrcode($url);
+            $iconstr = '<img src="'.get_template_directory_uri() . '/assets/icons/weixin.png" class="qr-pay">';
+            $html_str = '<div class="qrcon"> <h5> '.$iconstr.' </h5> <div class="title">微信扫码支付 '.$order_price.' 元</div> <div align="center" class="qrcode"> <img src="'.$pay_qrcode_url.'"/> </div> <div class="bottom weixinpay"> 请使用微信扫一扫<br>扫描二维码支付</br> </div> </div>';
+            echo json_encode(array('status' => '1', 'type' => '1', 'msg' => $html_str, 'img' => $pay_qrcode_url, 'num' => $order_trade_no));
+            exit;
+        } catch (Exception $e) {
+            echo "errcode:{$e->getCode()},errmsg:{$e->getMessage()}";exit;
+            //TODO:处理支付调用异常的情况
+        }
+        exit;
+    }
+
+
     //虎皮椒支付 讯虎支付 V3 支付宝
     if ($pay_type == 6) {
         require_once get_template_directory() . '/inc/class/xunhupay.class.php';
@@ -1847,12 +2150,12 @@ function go_post_pay()
         if ($resultData && $resultData['status'] == 0) {
             if ($paymethod == 3) {
                 $iconstr = '<img src="'.get_template_directory_uri() . '/assets/icons/weixin.png" class="qr-pay">';
-                $html_str = '<div class="qrcon"> <h5> '.$iconstr.' </h5> <div class="title">微信扫码支付 '.$order_price.' 元</div> <div align="center" class="qrcode"> <img src="'.$resultData['qrcode'].'"/> </div> <div class="bottom weixinpay"> 请使用微信扫一扫<br>扫描二维码支付</br> </div> </div>';
+                $html_str = '<div class="qrcon"> <h5> '.$iconstr.' </h5> <div class="title">微信扫码支付 '.$resultData['money'].' 元</div> <div align="center" class="qrcode"> <img src="'.$resultData['qrcode'].'"/> </div> <div class="bottom weixinpay">请使用微信扫一扫</br><b style="font-size: 12px;color: #f10;">请在五分钟内支付指定金额</b></br><b style=" font-size: 12px; ">手机用户可保存上方二维码到手机中</b></br><b style=" font-size: 12px; ">在微信扫一扫中选择“相册”即可</b> </div> </div>';
                 echo json_encode(array('status' => '1', 'type' => '1', 'msg' => $html_str, 'img' => $resultData['qrcode'], 'num' => $order_trade_no));
                 exit;
             }else{
                 $iconstr = '<img src="'.get_template_directory_uri() . '/assets/icons/alipay.png" class="qr-pay">';
-                $html_str = '<div class="qrcon"> <h5> '.$iconstr.' </h5> <div class="title">支付宝扫码支付 '.$order_price.' 元</div> <div align="center" class="qrcode"> <img src="'.$resultData['qrcode'].'"/> </div> <div class="bottom alipay"> 请使用支付宝扫一扫<br>扫描二维码支付</br> </div> </div>';
+                $html_str = '<div class="qrcon"> <h5> '.$iconstr.' </h5> <div class="title">支付宝扫码支付 '.$resultData['money'].' 元</div> <div align="center" class="qrcode"> <img src="'.$resultData['qrcode'].'"/> </div> <div class="bottom alipay"> 请使用支付宝扫一扫<br><b style="font-size: 12px;color: #f10;">请在五分钟内支付指定金额</b></br><b style=" font-size: 12px; ">手机用户可保存上方二维码到手机中</b></br><b style=" font-size: 12px; ">在支付宝扫一扫中选择“相册”即可</b> </div> </div>';
                 echo json_encode(array('status' => '1', 'type' => '1', 'msg' => $html_str , 'img' => $resultData['qrcode'], 'num' => $order_trade_no));
                 exit;
             }
@@ -1959,7 +2262,7 @@ function add_pay_post()
     }
     // 发起订单请求
     $order_trade_no = date("ymdhis") . mt_rand(100, 999) . mt_rand(100, 999) . mt_rand(100, 999); // 订单号
-    $payInfo = $PostPay->add($post_price, $order_vip_rate,$order_trade_no,9999);
+    $payInfo = $PostPay->add($post_price, $order_vip_rate,$order_trade_no,99);
     if (!$payInfo || !is_array($payInfo)) {
         echo json_encode(array('status' => '0', 'msg' => '添加订单失败'));
         exit;

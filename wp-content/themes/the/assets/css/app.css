@@ -8,8 +8,6 @@ body {
     margin: 0;
 }
 
-
-
 article,aside,footer,header,nav,section {
     display: block;
 }
@@ -3794,7 +3792,7 @@ table tbody tr td,table tbody tr td {
     }
 
     .module.slider.diy .post {
-        height: 160px;
+        height:160px !important;
     }
 
     .slider.big.diy .slider-title {
@@ -4712,19 +4710,6 @@ table tbody tr td,table tbody tr td {
 .entry-header .entry-meta .meta-category a {
     align-items: center;
     display: flex;
-    background-color: #ff980017;
-    border-radius: 50px 25px 25px 50px;
-    height: 17px;
-    padding-right: 2px;
-}
-
-.entry-header .entry-meta .meta-category a:nth-child(2) {
-    align-items: center;
-    display: flex;
-    background-color: #4caf5017;
-    border-radius: 50px 25px 25px 50px;
-    height: 17px;
-    padding-right: 2px;
 }
 
 .entry-header .entry-meta .meta-category a+a {
@@ -9917,6 +9902,21 @@ input[type=range] {
     line-height: 22px;
     font-size: 13px;
     height: 44px;
+}
+
+.post-expire-time{
+    position: absolute;
+    right: 0;
+    top: 0;
+    padding: 4px 12px;
+    background: #f9655a;
+    color: #fff;
+    border-radius: 0 0 0 10px;
+    font-size: 13px;
+}
+.post-expire-time.ok{
+    background: #8BC34A;
+    color: #fff;
 }
 
 /*mod ripro-dark  .ripro-dark */

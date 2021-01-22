@@ -14,10 +14,16 @@ if ($is_cao_site_list_blog) {
 }
 /////////////
 ?>
+
+
 <div class="container">
   <?php if (!get_term_meta($cat_ID, 'is_filter', 'true')) {
     get_template_part( 'parts/filter-bar' );
   } ?>
+
+
+<?php do_action('ripro_echo_ads', 'ad_archive_1'); ?>
+
   <div class="row">
     <div class="<?php echo $col_class;?>">
       <div class="content-area">
@@ -35,6 +41,9 @@ if ($is_cao_site_list_blog) {
         </main>
       </div>
     </div>
+
+    
+
     <?php if ($is_cao_site_list_blog) : ?>
     <!-- 侧边栏 -->
     <div class="sidebar-column col-lg-3">
@@ -44,6 +53,7 @@ if ($is_cao_site_list_blog) {
     </div>
     <?php endif;?>
   </div>
+  <?php do_action('ripro_echo_ads', 'ad_archive_2'); ?>
 </div>
 <?php
 wp_reset_postdata();

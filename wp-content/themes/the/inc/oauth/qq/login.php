@@ -7,7 +7,12 @@ wp_no_robots();
 
 //获取后台配置
 $qqConfig = _cao('oauth_qq');
-$qqOAuth  = new \Yurun\OAuthLogin\QQ\OAuth2($qqConfig['appid'], $qqConfig['appkey'], $qqConfig['backurl']);
+
+$_appid = trim($qqConfig['appid']);
+$_appkey = trim($qqConfig['appkey']);
+
+
+$qqOAuth  = new \Yurun\OAuthLogin\QQ\OAuth2($_appid, $_appkey, $qqConfig['backurl']);
 if ($qqConfig['agent']) {
     $qqOAuth->loginAgentUrl = esc_url(home_url('/oauth/qqagent'));
 }

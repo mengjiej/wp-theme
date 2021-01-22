@@ -34,6 +34,25 @@ $PostPay = new PostPay($user_id,0);
                ?>
                 <div class="col-12">
                   <article id="post-<?php the_ID(); ?>" <?php post_class( 'post post-list' ); ?>>
+                    <?php
+                    // 获取购买天数有效期天数
+                      $post_expire = get_post_meta(get_the_ID(),'cao_expire_day',1);
+                      $shop_expire = (empty($post_expire)) ? _cao('ripro_expire_day','0') : $post_expire ;
+                      if (!empty($shop_expire)) {
+                        global $wpdb, $paylog_table_name;
+                        // 最近一次购买时间
+                        $p_time = $wpdb->get_row($wpdb->prepare("SELECT pay_time FROM {$paylog_table_name} WHERE post_id = %d AND status = 1 ",get_the_ID()));
+                        $_time = time();
+                        //有效期结束时间
+                        $post_expire_time = $p_time->pay_time+($shop_expire*24*3600);
+                        if ($post_expire_time < $_time) {
+                            echo '<span class="post-expire-time">权限已过期</span>';
+                        }
+                      }else{
+                            echo '<span class="post-expire-time ok">可查看下载</span>';
+                        }
+
+                    ?>
                     <?php cao_entry_media( array( 'layout' => 'rect_300' ) ); ?>
                     <div class="entry-wrapper">
                       <?php cao_entry_header( array( 'category' => true ,'author'=>true ,'comment'=> true) ); ?>

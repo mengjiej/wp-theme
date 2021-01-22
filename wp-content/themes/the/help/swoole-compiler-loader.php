@@ -11,12 +11,13 @@ error_reporting(E_ALL);
 restore_exception_handler();
 restore_error_handler();
 date_default_timezone_set('Asia/Shanghai');
+
 // Set constants
-define('WIZARD_VERSION', '2.0.2');
+define('WIZARD_VERSION', '2.2');
 define('WIZARD_DEFAULT_LANG', 'zh-cn');
 define('WIZARD_OPTIONAL_LANG', 'zh-cn,en');
-define('WIZARD_NAME_ZH', 'Swoole Compiler Loader安装助手vip.ylit.cc');
-define('WIZARD_NAME_EN', 'Swoole Compiler Loader Wizard');
+define('WIZARD_NAME_ZH', 'Swoole Compiler Loader 安装助手-ritheme.com');
+define('WIZARD_NAME_EN', 'Swoole Compiler Loader Wizard-ritheme.com');
 define('WIZARD_DEFAULT_RUN_MODE', 'web');
 define('WIZARD_OPTIONAL_RUN_MODE', 'cli,web');
 define('WIZARD_DEFAULT_OS', 'linux');
@@ -25,10 +26,10 @@ define('WIZARD_BASE_API', 'http://compiler.swoole.com');
 
 // Language items
 $languages['zh-cn'] = [
-    'title' => 'Swoole Compiler Loader 安装助手-vip.ylit.cc',
+    'title' => 'Swoole Compiler Loader 安装助手-ritheme.com',
 ];
 $languages['en'] = [
-    'title' => 'Swoole Compiler Loader Wizard',
+    'title' => 'Swoole Compiler Loader Wizard-vip.ylit.cc',
 ];
 
 // Set env variable for current environment
@@ -87,6 +88,11 @@ if (isset($sysInfo['thread_safety'])) {
 }
 // Check swoole loader installation
 if (isset($sysInfo['swoole_loader']) and isset($sysInfo['swoole_loader_version'])) {
+    // 已安装直接跳转首页
+    $http_type = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')) ? 'https://' : 'http://';
+    $the_homeurl = $http_type . $_SERVER['HTTP_HOST'];
+    echo "<script type='text/javascript'>window.location.href='$the_homeurl';</script>";exit;
+
     $env['php']['swoole_loader']['status']  = $sysInfo['swoole_loader'] ? "<span style='color: #007bff;'>已安装</span>"
         : '未安装';
     if ($sysInfo['swoole_loader_version'] !== false) {
@@ -98,12 +104,65 @@ if (isset($sysInfo['swoole_loader']) and isset($sysInfo['swoole_loader_version']
     $env['php']['swoole_loader']['status']  = '未安装';
     $env['php']['swoole_loader']['version'] =  '未知';
 }
+
+
+// download_url
+
+// 下载 2.2 版本loader（64位）
+
+$download_url=[
+    'unix'=>[
+        'nosafety'=>[
+            '5.6'=>'https://business.swoole.com/static/loader2.1.0/swoole_loader56.so',
+            '7.0'=>'https://business.swoole.com/static/loader2.1.0/swoole_loader70.so',
+            '7.1'=>'https://business.swoole.com/static/loader2.1.0/swoole_loader71.so',
+            '7.2'=>'https://business.swoole.com/static/loader2.1.0/swoole_loader72.so',
+            '7.3'=>'https://business.swoole.com/static/loader2.1.0/swoole_loader73.so',
+            '7.4'=>'https://business.swoole.com/static/loader2.2.0/swoole_loader74.so',
+        ],
+        'safety'=>[
+            '5.6'=>'https://business.swoole.com/static/loader2.1.0/swoole_loader56_zts.so',
+            '7.0'=>'https://business.swoole.com/static/loader2.1.0/swoole_loader70_zts.so',
+            '7.1'=>'https://business.swoole.com/static/loader2.1.0/swoole_loader71_zts.so',
+            '7.2'=>'https://business.swoole.com/static/loader2.1.0/swoole_loader72_zts.so',
+            '7.3'=>'https://business.swoole.com/static/loader2.1.0/swoole_loader73_zts.so',
+            '7.4'=>'https://business.swoole.com/static/loader2.2.0/swoole_loader74_zts.so',
+        ]
+    ],
+    'windows'=>[
+        'nosafety'=>[
+            '5.6'=>'https://business.swoole.com/static/loader2.1.0/php_swoole_loader_php56_nzts_x64.dll',
+            '7.0'=>'https://business.swoole.com/static/loader2.1.0/php_swoole_loader_php70_nzts_x64.dll',
+            '7.1'=>'https://business.swoole.com/static/loader2.1.0/php_swoole_loader_php71_nzts_x64.dll',
+            '7.2'=>'https://business.swoole.com/static/loader2.1.0/php_swoole_loader_php72_nzts_x64.dll',
+            '7.3'=>'https://business.swoole.com/static/loader2.1.0/php_swoole_loader_php73_nzts_x64.dll',
+            '7.4'=>'https://business.swoole.com/static/loader2.2.0/php_swoole_loader_php74_nzts_x64.dll',
+        ],
+        'safety'=>[
+            '5.6'=>'https://business.swoole.com/static/loader2.1.0/php_swoole_loader_php56_zts_x64.dll',
+            '7.0'=>'https://business.swoole.com/static/loader2.1.0/php_swoole_loader_php70_zts_x64.dll',
+            '7.1'=>'https://business.swoole.com/static/loader2.1.0/php_swoole_loader_php71_zts_x64.dll',
+            '7.2'=>'https://business.swoole.com/static/loader2.1.0/php_swoole_loader_php72_zts_x64.dll',
+            '7.3'=>'https://business.swoole.com/static/loader2.1.0/php_swoole_loader_php73_zts_x64.dll',
+            '7.4'=>'https://business.swoole.com/static/loader2.2.0/php_swoole_loader_php74_zts_x64.dll',
+        ]
+    ],
+];
+// 当前环境对应版本
+$_php_os = $env['os']['name'];
+$_php_v = substr($env['php']['version'],0,3);
+$_is_safety = (empty($sysInfo['thread_safety'])) ? 'nosafety' : 'safety' ;
+$the_os_downurl = $download_url[$_php_os][$_is_safety][$_php_v];
+preg_match('/\/([^\/]+\.[a-z]+)[^\/]*$/',$the_os_downurl,$down_name);
+
+// var_dump($down_name[1]);
 /**
  *  Web mode
  */
 if ('web' == $env['php']['run_mode']) {
     $language = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 4);
-    if (preg_match("/zh-c/i", $language)) {
+    
+    if (preg_match("/zh-C/i", $language)) {
         $env['lang'] = "zh-cn";
         $wizard_lang = $env['lang'];
     } else {
@@ -111,36 +170,32 @@ if ('web' == $env['php']['run_mode']) {
         $wizard_lang = $env['lang'];
     }
     $html = '';
+
+
     // Header
     $html_header = '<!doctype html>
-	<html lang="en">
-	  <head>
-		<!-- Required meta tags -->
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-		<!-- Bootstrap CSS -->
-		<link href="https://lib.baomitu.com/twitter-bootstrap/4.1.0/css/bootstrap.min.css" rel="stylesheet">
-		<title>%s</title>
-		<style>
-			.list_info {display: inline-block; width: 12rem;}
-			.bold_text {font-weight: bold;}
-			.code {color:#007bff;font-size: medium;}
-		</style>
-	  </head>
-	  <body class="bg-light"> 
-	  ';
+    <html lang="'.$wizard_lang.'">
+      <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <link href="install.min.css" rel="stylesheet">
+        <title>%s</title>
+      </head>
+      <body class="bg-light"> 
+      ';
     $html_header = sprintf($html_header, $languages[$wizard_lang]['title']);
     $html_body = '<div class="container">';
-    $html_body_nav = '<div class="py-5 text-center"  style="padding-bottom: 1rem!important;">';
-    $html_body_nav .= '<h2>请认准阅读步骤Swoole Compiler安装步骤</h2>';
-    $html_body_nav .= '<p class="lead"> （ripro主题需要此扩展得以正常使用！<a target="_blank" href="https:vip.ylit.cc/">正版官网 VIP.YLIT.CC</a>）';
-    $html_body_nav .=  '</div><hr>';
+    $html_body_nav = '<div class="text-center" style="text-align: center;">';
+    $html_body_nav .= '<h2 style="margin: 0;">Swoole Compiler 安装向导</h2>';
+    $html_body_nav .= '<p>（RiPro需要Swoole Compiler加密扩展，支持PHP5.6~7.4，推荐7.4）</p>';
+    $html_body_nav .=  '</div>';
 
     // Environment information
     $html_body_environment = '
-	<div class="col-12"  style="padding-top: 1rem!important;">
-		<h5 class="text-center">您当前环境信息</h5>
-		<ul class="list-unstyled text-small">';
+    <div class="col-12"  style="">
+        <h4>环境信息</h4>
+        <ul>';
     $html_body_environment .= '<li><span class="list_info">操作系统 : </span>' . $env['os']['raw_name'] . '</li>';
     $html_body_environment .= '<li><span class="list_info">PHP版本 : </span>' . $env['php']['version'] . '</li>';
     $html_body_environment .= '<li><span class="list_info">PHP运行环境 : </span>' . $env['php']['sapi'] . '</li>';
@@ -154,54 +209,53 @@ if ('web' == $env['php']['run_mode']) {
     if ($env['php']['bit'] == 32) {
         $html_body_environment .= '<li><span style="color:red">温馨提示：当前环境使用的PHP为 ' . $env['php']['bit'] . ' 位的PHP，Compiler 目前不支持 Debug 版本或 32 位的PHP，可在 phpinfo() 中查看对应位数，如果误报请忽略此提示</span></li>';
     }
-    $html_body_environment .= '	</ul></div>';
+    $html_body_environment .= ' </ul></div>';
 
     // Error infomation
     $html_error = "";
     if (!empty($env['php']['loaded_incompatible_extensions'])) {
-        $html_error = '<hr>
-		<div class="col-12"  style="padding-top: 1rem!important;">
-		<h5 class="text-center" style="color:red">错误信息</h5>
-		<p class="text-center" style="color:red">%s</p>
+        $html_error = '
+        <div class="col-12"  style="">
+        <h5 class="text-center" style="color:red">错误信息</h5>
+        <p class="text-center" style="color:red">%s</p>
     </div>
-		';
-        $err_msg = "当前PHP包含与swoole_compiler_loader扩展不兼容的扩展" . implode(',', $env['php']['loaded_incompatible_extensions']) . "，请移除不兼容的扩展。";
+        ';
+        $err_msg = "当前PHP包含与swoole_compiler_loader扩展不兼容的扩展" . implode(',', $env['php']['loaded_incompatible_extensions']) . "，请在PHP配置文件 php.ini 中移除提示不兼容的扩展。然后保持配置重启PHP继续。";
         $html_error = sprintf($html_error, $err_msg);
     }
 
     // Check Loader Status
-    $html_body_loader = '<hr>';
+    $html_body_loader = '';
+
     if (empty($html_error)) {
-        $html_body_loader .= '<div class="col-12" style="padding-top: 1rem!important;">';
-        $html_body_loader .= '<h5 class="text-center">安装和配置Swoole Loader扩展</h5>';
-        $html_body_loader .= '<p><span class="bold_text"><a target="_blank" href="https://www.lanzous.com/i7w9led">1 - 点击此处下载Swoole Loader压缩包</a></span></p><p>请下载压缩包，然后找到对应你系统的 《' . $env['php']['thread_safety'] . '》文件夹下《PHP' . $env['php']['version'] . '》的Swoole Loader扩展文件解压出来</p>';
-        $html_body_loader .= '<p><span class="bold_text">2 - 安装Swoole Loader</span></p><p>将刚才解压出来的Swoole Loader扩展文件（swoole_loader版本号.dll或swoole_loader版本号.so）上传到当前PHP的扩展安装目录中：<br/><pre class="code">' . $env['php']['extension_dir'] . '</pre></p>';
-        $html_body_loader .= '<p><span class="bold_text">3 - 修改php.ini配置</span>（如已修改配置，请忽略此步骤，不必重复添加）</p><p>';
-        $html_body_loader .= '编辑此PHP配置文件：<span class="code">'.$env['php']['ini_loaded_file'].'</span>，在此文件底部结尾处加入如下配置<br/>';
+        $html_body_loader .= '<div>';
+        $html_body_loader .= '<h4>安装和配置Swoole Loader 扩展</h4><ul style="background: #f1f1f1;">';
+        $html_body_loader .= '<p><span>1 - <a class="btn btn-primary" target="_blank" href="'.$the_os_downurl.'">点击下载 '.$_php_os.' PHP'.$_php_v.' Swoole Loader扩展文件</a></span></p>';
+
+        $html_body_loader .= '<p><span class="bold_text">2 - 安装Swoole Loader</span></p><p>将刚才下载的Swoole Loader扩展文件（'.$down_name[1].'）上传到当前PHP的扩展安装目录中：<b style="color: #2196F3;">' . $env['php']['extension_dir'] . '</b></p>';
+
+        $html_body_loader .= '<p>3 - 修改php.ini配置（如已修改配置，请忽略此步骤，不必重复添加）</p><p>';
+        $html_body_loader .= '编辑此PHP配置文件：<b style="color: #2196F3;">'.$env['php']['ini_loaded_file'].'</b><br>在此文件底部结尾处加入如下配置并且保存  ：';
         if ($env['os']['name'] ==  "windows") {
-            $html_body_loader .= '<pre class="code">extension=刚才上传的文件名.dll</pre><p style=" color: red; font-size: 22px; font-weight: 600; ">注意：需要名称和刚才上传到当前PHP的扩展安装目录中的文件名一致(例如：extension=swoole_loader72.dll)</p>';
+            $html_body_loader .= '<b style="color: #2196F3;">extension='.$down_name[1].'</b><br>注意：需要名称和刚才上传到当前PHP的扩展安装目录中的文件名一致';
         } else {
-            $html_body_loader .= '<pre class="code">extension=刚才上传的文件名.so</pre><p style=" color: red; font-size: 22px; font-weight: 600; ">注意：需要名称和刚才上传到当前PHP的扩展安装目录中的文件名一致(例如：extension=swoole_loader72.so)</p>';
+            $html_body_loader .= '<b style="color: #2196F3;">extension='.$down_name[1].'</b><br>注意：需要名称和刚才上传到当前PHP的扩展安装目录中的文件名一致';
         }
         $html_body_loader .= '</p>';
-        $html_body_loader .= '<p><span class="bold_text">4 - 重启服务</span></p><p>重启或重载PHP配置</p>';
-        $html_body_loader .= '<p><span class="bold_text">5 - 打开域名首页</span></p><p>显示已经安装后打开首页即可</p>';
-        $html_body_loader .= '</div>';
+        $html_body_loader .= '<p>4 - 重启PHP或者重启服务器</p>';
+        $html_body_loader .= '</ul></div>';
     }
 
     // Body footer
-    $html_body_footer = '<footer class="my-5 pt-5 text-muted text-center text-small">
-	<p class="mb-1">CopyRight © 2018 - '. date('Y') . ' VIP.YLIT.CC RiPro主题加密扩展安装引导助手 如有不懂请联系QQ：200933220 或会员群交流</p>
+    $html_body_footer = '<footer>
+    <p style="text-align: center; font-size: 13px;">CopyRight © '. date('Y') . ' <a href="https://ritheme.com/" target="_blank" class="text-success">ritheme.com</a> RiPro主题加密扩展安装引导助手 如有不懂会员群交流</p>
   </footer>';
     $html_body .= $html_body_nav . '<div class="row">' . $html_body_environment . $html_error . $html_body_loader . '</div>' . $html_body_footer;
     $html_body .= '</div>';
     // Footer
     $html_footer = '
-		<script src="https://lib.baomitu.com/jquery/3.3.1/jquery.min.js"></script>
-		<script src="https://lib.baomitu.com/axios/0.18.0/axios.min.js"></script>
-		<script src="https://lib.baomitu.com/twitter-bootstrap/4.1.0/js/bootstrap.min.js"></script>
-		</body>
-	</html>';
+        </body>
+    </html>';
     // Make full html
     $html = $html_header .  $html_body . $html_footer;
     // Output html content

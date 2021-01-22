@@ -21,6 +21,9 @@ if ($is_cao_site_list_blog) {
   <?php if (!get_term_meta($tagID, 'is_filter', 'true')) {
     get_template_part( 'parts/filter-bar' );
   } ?>
+
+  <?php do_action('ripro_echo_ads', 'ad_archive_1'); ?>
+
   <div class="row">
     <div class="<?php echo $col_class;?>">
       <div class="content-area">
@@ -47,6 +50,8 @@ if ($is_cao_site_list_blog) {
     </div>
   <?php endif;?>
   </div>
+  <?php do_action('ripro_echo_ads', 'ad_archive_2'); ?>
+  
 </div>
 <?php
 wp_reset_postdata();

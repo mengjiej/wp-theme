@@ -71,7 +71,6 @@
             );
 
             $comment_field = '<p class="comment-form-comment">' .
-                // '<label for="comment">' . esc_html__( 'Comment*', 'magsy' ) . '</label>' .
                 '<textarea id="comment" name="comment" rows="8" aria-required="true">' .
                 '</textarea></p>';
 

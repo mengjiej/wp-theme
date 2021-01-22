@@ -21,7 +21,7 @@ $CaoUser = new CaoUser($current_user->ID);
                                 </div>
 
                                 <div class="modules__content">
-                                    <?php if (_cao('is_alipay') || _cao('is_weixinpay') || _cao('is_payjs') || _cao('is_xunhupay') || _cao('is_xunhualipay') || _cao('is_codepay') ) : $cdk_display = 'style="display: none;"';?>
+                                    <?php if (_cao('is_alipay') || _cao('is_weixinpay') || _cao('is_payjs') || _cao('is_xunhupay') || _cao('is_xunhualipay') || _cao('is_xunhupay_ali') ||_cao('is_xunhupay_wx') ||_cao('is_codepay') ) : $cdk_display = 'style="display: none;"';?>
                                     <div id="yuecz">
                                         <p class="subtitle">快速选择充值</p>
                                         <div class="amounts">
@@ -88,7 +88,7 @@ $CaoUser = new CaoUser($current_user->ID);
                     </div>
         </div>
         <!-- 付款选项 -->
-        <?php if (_cao('is_alipay') || _cao('is_weixinpay') || _cao('is_payjs') || _cao('is_xunhupay') || _cao('is_xunhualipay') || _cao('is_codepay')) : ?>
+        <?php if (_cao('is_alipay') || _cao('is_weixinpay') || _cao('is_payjs') || _cao('is_xunhupay') || _cao('is_xunhualipay') || _cao('is_xunhupay_wx') || _cao('is_xunhupay_ali') || _cao('is_codepay')) : ?>
         <div class="form-box">
             <p class="subtitle">充值方式</p>
             
@@ -149,6 +149,29 @@ $CaoUser = new CaoUser($current_user->ID);
                                 </span>
                             </div>
                             <?php endif; ?>
+
+                            <?php if (_cao('is_xunhupay_ali')) : ?>
+                            <div style=" margin-right: 20px; ">
+                                <span class="flex-center payradio">
+                                      <input type="radio" id="pay_xunhupay_ali" name="pay_type" value="9">
+                                      <label class="" for="pay_xunhupay_ali">
+                                        <img src="<?php echo get_template_directory_uri() . '/assets/icons/alipay.png';?>" height="35" class="mr-2">
+                                      </label>
+                                </span>
+                            </div>
+                            <?php endif; ?>
+                            
+                            <?php if (_cao('is_xunhupay_wx')) : ?>
+                            <div style=" margin-right: 20px; ">
+                                <span class="flex-center payradio">
+                                      <input type="radio" id="pay_xunhupay_wx" name="pay_type" value="10">
+                                      <label class="" for="pay_xunhupay_wx">
+                                        <img src="<?php echo get_template_directory_uri() . '/assets/icons/weixin.png';?>" height="35" class="mr-2">
+                                      </label>
+                                </span>
+                            </div>
+                            <?php endif; ?>
+                            
 
                             <?php if (_cao('is_codepay')) : $codepay = _cao('codepay'); ?>
 

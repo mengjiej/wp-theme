@@ -14,6 +14,7 @@ if ($is_cao_site_list_blog) {
 <div class="container">
   <?php if ( have_posts() ) : ?>
   <?php get_template_part( 'parts/filter-bar' ); ?>
+  <?php do_action('ripro_echo_ads', 'ad_archive_1'); ?>
   <?php endif; ?>
     <div class="row">
       <div class="<?php echo $col_class;?>">
@@ -41,6 +42,7 @@ if ($is_cao_site_list_blog) {
       </div>
       <?php endif;?>
     </div>
+    <?php do_action('ripro_echo_ads', 'ad_archive_2'); ?>
 </div>
 
 <?php

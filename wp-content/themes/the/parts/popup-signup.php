@@ -73,9 +73,11 @@
                             <!-- form  end -->
                         </div>
                     </div>
+                
                     <a onclick="alert('1. 提示登录成功但实际没有登录:\n    如果您使用的是QQ浏览器\n    请更换浏览器再进行登录操作\n2. 其他问题请联系:\nyunjie_lolicon@outlook.com')" class="rest-password">无法登录？</a>
                     <a target="_blank" href="<?php echo esc_url( home_url( '/wp-login.php?action=lostpassword' ) ); ?>" class="rest-password">忘记密码？</a>
                     <a onclick="alert('1. 没收到验证码：\n请检查邮箱是否正确，查看垃圾桶，验证码有可能会被识别成了垃圾邮件\n2. 一直在发送验证码：\n请等待一会，需要点时间，抱歉\n3. 发送验证码失败：\n请联系客服\nyunjie_lolicon@outlook.com')" class="rest-password">验证码？</a>
+ 
             </div>
             <!-- /.modal-content -->
         </div>

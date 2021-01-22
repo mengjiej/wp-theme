@@ -31,18 +31,17 @@ foreach ($mode_catpost['catcms'] as $key => $cms) {
 	<div class="section pb-0">
 	  <div class="container">
 	  	<h3 class="section-title">
-	  		<span><i class="fa fa-th"></i> <a target="_blank" href="<?php echo esc_url( get_category_link( $category->cat_ID ) ); ?>"><?php echo $category->cat_name; ?></a></span>
+	  		<span><i class="fa fa-th"></i> <a href="<?php echo esc_url( get_category_link( $category->cat_ID ) ); ?>"><?php echo $category->cat_name; ?></a></span>
 	  	</h3>
-	  	<?php _the_cao_ads('ad_list_header', 'list-header');?>
+	  	<?php do_action('ripro_echo_ads', 'ad_cms_1'); ?>
 		<div class="row cat-posts-wrapper">
 		    <?php while ( $data->have_posts() ) : $data->the_post();
 		      get_template_part( 'parts/template-parts/content',$cms['latest_layout'] );
 		    endwhile; ?>
 		</div>
-		<?php _the_cao_ads('ad_list_footer', 'list-footer');?>
+		<?php do_action('ripro_echo_ads', 'ad_cms_2'); ?>
 	  </div>
 	</div>
-	<div class="infinite-scroll-action"><a target="_blank" href="<?php echo esc_url( get_category_link( $category->cat_ID ) ); ?>"><div class="infinite-scroll-button button">查看更多</div></a></div>
 
 	<?php 
 	wp_reset_postdata();

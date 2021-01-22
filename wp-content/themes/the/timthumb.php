@@ -1,17 +1,19 @@
 <?php
-/**
- * TimThumb by Ben Gillbanks and Mark Maunder
- * Based on work done by Tim McDaniels and Darren Hoyt
- * http://code.google.com/p/timthumb/
- * 
- * GNU General Public License, version 2
- * http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
- *
- * Examples and documentation available on the project homepage
- * http://www.binarymoon.co.uk/projects/timthumb/
- * 
- * $Rev$
- */
+
+// 如果有外链图片 请在这里添加有域名白名单，例如yuming.aliyunoss.com,否则安全原因不能显示，如果已经用了阿里云oss或者其他wp自带裁剪模式，安全在安全 可以删除此文件
+
+if(! isset($ALLOWED_SITES)){
+	//下面输入您的外链图片域名 一行一个 注意英文逗号结尾
+	$ALLOWED_SITES = array (
+		'aliyuncs.com',
+		'image.baidu.com',
+		'qiniudn.com',
+		'sinaimg.cn',
+		'poco.cn',
+		'upyun.com',
+	);
+}
+
 
 /*
  * --- TimThumb CONFIGURATION ---
@@ -30,7 +32,7 @@ if(! defined('BLOCK_EXTERNAL_LEECHERS') ) 	define ('BLOCK_EXTERNAL_LEECHERS', fa
 if(! defined('DISPLAY_ERROR_MESSAGES') )	define ('DISPLAY_ERROR_MESSAGES', true);				// Display error messages. Set to false to turn off errors (good for production websites)
 //Image fetching and caching
 if(! defined('ALLOW_EXTERNAL') )			define ('ALLOW_EXTERNAL', TRUE);						// Allow image fetching from external websites. Will check against ALLOWED_SITES if ALLOW_ALL_EXTERNAL_SITES is false
-if(! defined('ALLOW_ALL_EXTERNAL_SITES') ) 	define ('ALLOW_ALL_EXTERNAL_SITES', TRUE);				// Less secure. 
+if(! defined('ALLOW_ALL_EXTERNAL_SITES') ) 	define ('ALLOW_ALL_EXTERNAL_SITES', false);				// Less secure. 
 if(! defined('FILE_CACHE_ENABLED') ) 		define ('FILE_CACHE_ENABLED', TRUE);					// Should we store resized/modified images on disk to speed things up?
 if(! defined('FILE_CACHE_TIME_BETWEEN_CLEANS'))	define ('FILE_CACHE_TIME_BETWEEN_CLEANS', 86400);	// How often the cache is cleaned 
 
@@ -127,20 +129,7 @@ if(! defined('WEBSHOT_PROXY') ) 	define ('WEBSHOT_PROXY', '');				//In case you'
 if(! defined('WEBSHOT_XVFB_RUNNING') )	define ('WEBSHOT_XVFB_RUNNING', false);			//ADVANCED: Enable this if you've got Xvfb running in the background.
 
 
-// If ALLOW_EXTERNAL is true and ALLOW_ALL_EXTERNAL_SITES is false, then external images will only be fetched from these domains and their subdomains. 
-if(! isset($ALLOWED_SITES)){
-	$ALLOWED_SITES = array (
-		'flickr.com',
-		'staticflickr.com',
-		'picasa.com',
-		'img.youtube.com',
-		'upload.wikimedia.org',
-		'photobucket.com',
-		'imgur.com',
-		'imageshack.us',
-		'tinypic.com',
-	);
-}
+
 // -------------------------------------------------------------
 // -------------- STOP EDITING CONFIGURATION HERE --------------
 // -------------------------------------------------------------

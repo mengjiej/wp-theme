@@ -43,8 +43,13 @@ function this_user_nav_link($icon,$link='',$name=''){
 		    	<li><?php echo this_user_nav_link('star','myfav','我的收藏')?></li>
 	    	<?php endif; ?>
 	    	<?php if (_cao('is_nav_write')): ?>
-		    	<li><?php echo this_user_nav_link('file-text','mypost','我的文章')?></li>
-		    	<li><?php echo this_user_nav_link('pencil','write','发布资源')?></li>
+    		<?php if (current_user_can('publish_posts') && _cao('is_wp_admin_write','1')) : ?>
+          		<li><a target="_blank" href="<?php echo esc_url(home_url('/wp-admin/edit.php'));?>"><i class="fa fa-file-text"></i> 我的文章</a></li>
+          		<li><a target="_blank" href="<?php echo esc_url(home_url('/wp-admin/post-new.php'));?>"><i class="fa fa-pencil"></i> 发布资源</a></li>
+          	<?php else : ?>
+          		<li><?php echo this_user_nav_link('file-text','mypost','我的文章')?></li>
+	    		<li><?php echo this_user_nav_link('pencil','write','发布资源')?></li>
+          	<?php endif; ?>
 	    	<?php endif; ?>
 	    	<?php if (_cao('is_nav_ref')): ?>
             	<li><?php echo this_user_nav_link('paper-plane','ref','推广佣金')?></li>

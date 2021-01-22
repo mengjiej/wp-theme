@@ -1,21 +1,25 @@
 <?php 
-    if (!_cao('is_filter_bar')) :
-    $cat_ID = (is_category()) ? get_query_var('cat') : 0 ;
-    $cat_orderby = _cao('is_filter_item_cat_orderby','id');
-    ///////////S CACHE ////////////////
-    if (CaoCache::is()) {
-      $_the_cache_key = 'ripro_filter_cat_'.$cat_orderby;
-      $_the_cache_data = CaoCache::get($_the_cache_key);
-      if(false === $_the_cache_data ){
-          $_the_cache_data = get_terms('category', array('hide_empty' => 0,'parent' => 0,'orderby' =>$cat_orderby,'order' => 'DESC')); //缓存数据
-          CaoCache::set($_the_cache_key,$_the_cache_data);
-      }
-      $categories = $_the_cache_data;
-    }else{
-      $categories = get_terms('category', array('hide_empty' => 0,'parent' => 0,'orderby' =>$cat_orderby,'order' => 'DESC')); //缓存数据
-    }
-    ///////////S CACHE ////////////////
+if (!_cao('is_filter_bar')) :
+$currentterm = get_queried_object();
+if (!empty($currentterm)) {
+    $currentterm_id  = $currentterm->term_id;
+    $parent_id = $currentterm->parent;
+}else{
+    $currentterm_id  = 0;
+    $parent_id  = 0;
+}
+
+$top_term_id = (is_category()) ? get_category_root_id($currentterm_id ) : 0 ;
+$current_array = array($currentterm_id);
+
+while($parent_id){
+    $current_array[] = $parent_id;
+    $parent_term = get_term($parent_id,'category');
+    $parent_id = $parent_term->parent;
+}
+
 ?>
+
 
 <div class="filter--content">
     <form class="mb-0" method="get" action="<?php echo home_url(); ?>">
@@ -25,49 +29,59 @@
             <?php if (_cao('is_filter_item_cat','1')) : ?>
             <div class="filter-item">
                 <?php
-                $content = '<ul class="filter-tag"><span><i class="fa fa-folder-open-o"></i> 分类</span>';
-                foreach ($categories as $category) {
-                    // 排除二级分类
-                    $_oncss = ($category->term_id == $cat_ID) ? 'on' : '' ;
-                    $content .= '<li><a href="'.get_category_link($category->term_id).'" class="'.$_oncss.'">'.$category->name.'</a></li>';
-                }
-                $content .= "</ul>";
-                echo $content;
-                ?>
-            </div>
-            <?php endif; ?>
-            
-
-            <?php 
-            if (is_category()) {
-                $child_categories = get_categories( array('hide_empty' => 0,'parent'=>$cat_ID) );//获取所有分类
-                if (empty($child_categories)) {
-                    $root_cat_ID = get_category_root_id($cat_ID);
-                    $child_categories = get_categories( array('hide_empty' => 0,'parent'=>$root_cat_ID) );//获取所有分类
-                }
-            }
-            if (!empty($child_categories) && _cao('is_filter_item_cat2','1')) : ?>
-            <!-- 二级分类 -->
-            <div class="filter-item">
-                <?php
-                    $content = '<ul class="filter-tag"><span><i class="fa fa-long-arrow-right"></i> 更多</span>';
-                    foreach ($child_categories as $category) {
-                        $_oncss = ($category->term_id == $cat_ID) ? 'on' : '' ;
-                        $content .= '<li><a href="'.get_category_link($category->term_id).'" class="'.$_oncss.'">'.$category->name.'</a></li>';
+                $filter_cat_1=_cao('archive_filter_cat_1');
+                echo '<ul class="filter-tag"><span><i class="fa fa-folder-open-o"></i> 分类筛选</span>';
+                if (!empty($filter_cat_1)) {
+                    foreach ($filter_cat_1 as $_cid) {
+                        $item = get_term($_cid,'category');
+                        if (!empty($item)) {
+                            $is_current = (in_array($item->term_id,$current_array)) ? ' class="on"' : '' ;
+                            echo '<li><a'.$is_current.' href="'.get_category_link($item->term_id).'">'.$item->name.'</a></li>';
+                        }
                     }
-                    $content .= "</ul>";
-                    echo $content;
+                } else {
+                    echo '<li>请在后台-主题设置-分类页筛选-一级主分类筛选配置和排序您的主分类筛选</li>';
+                }
+                echo "</ul>";
                 ?>
             </div>
+            <?php endif;
+            
+            // 二级分类
+            if (_cao('is_filter_item_cat2','1')) : 
+                $cat_orderby = _cao('is_filter_item_cat_orderby','id');
+                $child_categories = get_terms('category', array('hide_empty' => 0,'parent' => $top_term_id,'orderby' =>$cat_orderby,'order' => 'DESC'));
+                if ($top_term_id && !empty($child_categories)) {
+                    $is_child3 = 0 ;//三级指针
+                   echo '<div class="filter-item"><ul class="filter-tag"><span><i class="fa fa-folder-open-o"></i> 二级分类</span>';
+                    foreach ($child_categories as $item) {
+                        $is_current = (in_array($item->term_id,$current_array)) ? ' class="on"' : '' ;
+                        if (!empty($is_current)) {
+                          $is_child3 = $item->term_id;
+                        }
+                        echo '<li><a'.$is_current.' href="'.get_category_link($item->term_id).'">'.$item->name.'</a></li>';
+                    }
+                    echo '</ul></div>';
+                    // 三级分类
+                    $child_categories = get_terms('category', array('hide_empty' => 0,'parent' => $is_child3,'orderby' =>$cat_orderby,'order' => 'DESC'));
+                    if (_cao('is_filter_item_cat3','1') && $is_child3>0  && !empty($child_categories)) {
+                      echo '<div class="filter-item"><ul class="filter-tag"><span><i class="fa fa-folder-open-o"></i> 三级分类</span>';
+                      foreach ($child_categories as $item) {
+                          $is_current = (in_array($item->term_id,$current_array)) ? ' class="on"' : '' ;
+                          echo '<li><a'.$is_current.' href="'.get_category_link($item->term_id).'">'.$item->name.'</a></li>';
+                      }
+                      echo '</ul></div>';
+                    }
+                }
+            ?>
             <?php endif; ?>
 
             <!-- 相关标签 -->
             <?php if (_cao('is_filter_item_tags','1')){
-                $cat_ID = (get_query_var('cat')) ? get_query_var('cat') : 0 ;
-                $this_cat_arg = array( 'categories' => $cat_ID);
+                $this_cat_arg = array( 'categories' => $currentterm_id);
                 ///////////S CACHE ////////////////
                 if (CaoCache::is()) {
-                  $_the_cache_key = 'ripro_filter_item_tags_'.$cat_ID;
+                  $_the_cache_key = 'ripro_filter_item_tags_'.$currentterm_id;
                   $_the_cache_data = CaoCache::get($_the_cache_key);
                   if(false === $_the_cache_data ){
                       $_the_cache_data = _get_category_tags($this_cat_arg); //缓存数据
@@ -81,7 +95,7 @@
                 
                 if(!empty($tags)) {
                     echo '<div class="filter-item">';
-                    $content = '<ul class="filter-tag"><span><i class="fa fa-tags"></i> 标签</span>';
+                    $content = '<ul class="filter-tag"><span><i class="fa fa-tags"></i> 相关标签</span>';
                       foreach ($tags as $tag) {
                         $content .= '<li><a href="'.get_tag_link($tag->term_id).'">'.$tag->name.'</a></li>';
                       }
@@ -95,7 +109,7 @@
                 $custom_post_meta_opt = _cao('custom_post_meta_opt', '0');
                 foreach ($custom_post_meta_opt as $filter) {
                     $opt_meta_category = (array_key_exists('meta_category',$filter)) ? $filter['meta_category'] : false ;
-                    if (!$opt_meta_category || in_array($cat_ID,$opt_meta_category) ) {
+                    if (!$opt_meta_category || in_array($currentterm_id,$opt_meta_category) ) {
                         $_meta_key = $filter['meta_ua'];
                         echo '<div class="filter-item">';
                             $is_on = !empty($_GET[$_meta_key]) ? $_GET[$_meta_key] : '';

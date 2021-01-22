@@ -18,8 +18,12 @@ $wp_create_nonce = wp_create_nonce('caoclick-' . $current_user->ID);
                     <span class="btn avatarinfo">
                         <label for="type-gravatar">
                         <img src="<?php echo _get_user_avatar_url('gravatar')?>" height="50" class="mr-2">
-                        <a class="upload"><i class="fa fa-camera"></i><input type="file" name="addPic" id="addPic" accept=".jpg, .gif, .png" resetonclick="true" data-nonce="<?php echo $wp_create_nonce; ?>">
-                        </label></a>
+                        <?php if (!_cao('disabled_up_ava')) { ?>
+                            <a class="upload"><i class="fa fa-camera"></i><input type="file" name="addPic" id="addPic" accept=".jpg, .gif, .png" resetonclick="true" data-nonce="<?php echo $wp_create_nonce; ?>">
+                            </a>
+                        <?php } ?>
+                        
+                        </label>
                         <input type="radio" id="type-gravatar" name="user_avatar_type" value="gravatar" <?php echo $_uavtype=='gravatar' ? 'checked' : '';?>><label for="type-gravatar">默认</label>
                     </span>
                     <?php if(_is_bind_openid('qq')): ?>

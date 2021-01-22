@@ -3,7 +3,7 @@
   <?php get_template_part( 'parts/single-top' ); ?>
   <div class="container">
     <div class="entry-wrapper">
-      <?php  _the_cao_ads('ad_post_header', 'single-header'); ?>
+      <?php do_action('ripro_echo_ads', 'ad_single_1'); ?>
       <div class="entry-content u-text-format u-clearfix">
         <?php the_content(); ?>
       </div>
@@ -14,7 +14,7 @@
         if( _cao('post_copyright_s') ){
           get_template_part( 'parts/entry-cop' );
         }
-        _the_cao_ads('ad_post_footer', 'single-footer');
+        do_action('ripro_echo_ads', 'ad_single_2'); 
         get_template_part( 'parts/author-box' );
       ?>
     </div>

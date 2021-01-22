@@ -2,7 +2,7 @@
 if (!defined('ABSPATH')) {die;} // Cannot access directly.
 /**
  * RiPro是一个优秀的主题，首页拖拽布局，高级筛选，自带会员生态系统，超全支付接口，你喜欢的样子我都有！
- * 正版唯一购买地址，全自动授权下载使用：https://vip.ylit.cc/
+ * 正版唯一购买地址，全自动授权下载使用：https://ritheme.com/
  * 作者唯一QQ：200933220 （油条）
  * 承蒙您对本主题的喜爱，我们愿向小三一样，做大哥的女人，做大哥网站中最想日的一个。
  * 能理解使用盗版的人，但是不能接受传播盗版，本身主题没几个钱，主题自有支付体系和会员体系，盗版风险太高，鬼知道那些人乱动什么代码，无利不起早。
@@ -48,19 +48,16 @@ if (isset($post_id) && empty($ref)):
 	}
 
     if ($PostPay->isPayPost() || $cao_is_post_free) {
-        
-        // 判断会员类型 判断下载次数
-        $vip_status = $CaoUser->vip_status();
-        $this_vip_downum = $CaoUser->cao_vip_downum($uid,$vip_status);
-        $vip_stat = $vip_status;
     	if(!is_user_logged_in() && _cao('is_ripro_nologin_pay','1')){
             $before_paynum = get_post_meta($post_id, 'cao_paynum', true);
             update_post_meta($post_id, 'cao_paynum', (int) $before_paynum + 1);
             $PostPay->add_down_log();
-			$flush = _download_file($_downurl,$vip_stat);
+			$flush = _download_file($_downurl);
             exit();
 		}
-        
+        // 判断会员类型 判断下载次数
+        $vip_status = $CaoUser->vip_status();
+        $this_vip_downum = $CaoUser->cao_vip_downum($uid,$vip_status);
         // var_dump($this_vip_downum);die;
         if ($this_vip_downum['is_down'] || $PostPay->isPayPost() ) {
             if (_cao('is_all_down_num','0') && !$this_vip_downum['is_down']) {
@@ -79,7 +76,7 @@ if (isset($post_id) && empty($ref)):
                 $PostPay->add_down_log();
             }
             # // 开始下载缓冲...
-            $flush = _download_file($_downurl,$vip_stat);
+            $flush = _download_file($_downurl);
             exit();
         } else {
             cao_wp_die('下载次数超出限制','今日下载次数已用：'.$this_vip_downum['today_down_num'].'次,剩余下载次数：'.$this_vip_downum['over_down_num']);

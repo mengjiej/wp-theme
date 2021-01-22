@@ -1,5 +1,4 @@
 <?php 
-if (!defined('ABSPATH')) {die;} // Cannot access directly.
 /**
  * RiPro是一个优秀的主题，首页拖拽布局，高级筛选，自带会员生态系统，超全支付接口，你喜欢的样子我都有！
  * 正版唯一购买地址，全自动授权下载使用：https://vip.ylit.cc/
@@ -37,7 +36,7 @@ class XH_Payment_Api{
          
         return $response;
     }
-    public static function isWebApp(){
+    public static function is_app_client(){
         if(!isset($_SERVER['HTTP_USER_AGENT'])){
             return false;
         }
@@ -64,7 +63,11 @@ class XH_Payment_Api{
     
         $ipadchar = "/(ipad|ipad2)/i";
         preg_match($ipadchar,$u,$res);
-        return $res&&count($res)>0;
+        if($res&&count($res)>0){
+            return true;
+        }
+    
+        return false;
     }
     public static  function generate_xh_hash(array $datas,$hashkey){
         ksort($datas);
@@ -93,8 +96,90 @@ class XH_Payment_Api{
         return md5($arg.$hashkey);
     }
     
+    public static function generate_xh_hash_new(array $datas,$hashkey){
+        ksort($datas);
+        reset($datas);
+
+        $pre =array();
+        foreach ($datas as $key => $data){
+            if(is_null($data)||$data===''){
+                continue;
+            }
+            if($key=='sign'){
+                continue;
+            }
+            $pre[$key]=$data;
+        }
+
+        $arg  = '';
+        $qty = count($pre);
+        $index=0;
+
+        foreach ($pre as $key=>$val){
+            $arg.="$key=$val";
+            if($index++<($qty-1)){
+                $arg.="&";
+            }
+        }
+        return strtoupper(md5($arg.'&key='.$hashkey));
+    }
     public static  function is_wechat_app(){
         return strripos($_SERVER['HTTP_USER_AGENT'],'micromessenger');
+    }
+    /**
+     * http_post传输
+     * @param array $url
+     * @param string $jsonStr
+     */
+    public static function http_post_json($url, $jsonStr){
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonStr);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0); // 对认证证书来源的检查
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0); // 从证书中检查SSL加密算法是否存在
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                'Content-Type: application/json; charset=utf-8',
+                'Content-Length: ' . strlen($jsonStr)
+            )
+        );
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+     
+        return $response;
+    }
+     /**
+     * url拼接
+     * @param array $url
+     * @param string $datas
+     */
+    public static function data_link($url,$datas){
+        ksort($datas);
+        reset($datas);
+        $pre =array();
+        foreach ($datas as $key => $data){
+            if(is_null($data)||$data===''){
+                continue;
+            }
+            if($key=='body'){
+                continue;
+            }
+            $pre[$key]=$data;
+        }
+
+        $arg  = '';
+        $qty = count($pre);
+        $index=0;
+         foreach ($pre as $key=>$val){
+                $val=urlencode($val);
+                $arg.="$key=$val";
+                if($index++<($qty-1)){
+                    $arg.="&amp;";
+                }   
+        }
+        return $url.'?'.$arg;
     }
 }
 ?>

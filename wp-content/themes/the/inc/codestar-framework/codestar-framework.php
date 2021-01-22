@@ -1,7 +1,5 @@
 <?php if ( ! defined( 'ABSPATH' ) ) { die; } // Cannot access directly.
 
-require_once plugin_dir_path( __FILE__ ) .'classes/setup.class.php';
-
 /**
  * Caozhuti Custom function for get an option
  */
@@ -12,9 +10,14 @@ if (!function_exists('_cao')) {
         return (isset($options[$option])) ? $options[$option] : $default;
     }
 }
-require_once plugin_dir_path( __FILE__ ) .'options/options.theme.php';
-require_once plugin_dir_path( __FILE__ ) .'options/profile.theme.php';
-require_once plugin_dir_path( __FILE__ ) .'options/metabox.theme.php';
-require_once plugin_dir_path( __FILE__ ) .'options/widgets.theme.php';
-require_once plugin_dir_path( __FILE__ ) .'options/shortcoder.theme.php';
-require_once plugin_dir_path( __FILE__ ) .'options/taxonomy.theme.php';
+
+require_once plugin_dir_path( __FILE__ ) .'classes/init.class.php';
+require_once plugin_dir_path( __FILE__ ) .'classes/setup.class.php';
+require_once plugin_dir_path( __FILE__ ) .'options/admin-options.php';
+require_once plugin_dir_path( __FILE__ ) .'options/diy-options.php';
+require_once plugin_dir_path( __FILE__ ) .'options/metabox-options.php';
+require_once plugin_dir_path( __FILE__ ) .'options/profile-options.php';
+require_once plugin_dir_path( __FILE__ ) .'options/shortcode-options.php';
+require_once plugin_dir_path( __FILE__ ) .'options/taxonomy-options.php';
+require_once plugin_dir_path( __FILE__ ) .'options/widget-options.php';
+require_once plugin_dir_path( __FILE__ ) .'options/nav-menu-options.php';

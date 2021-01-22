@@ -2,7 +2,7 @@
 if (!defined('ABSPATH')) {die;} // Cannot access directly.
 /**
  * RiPro是一个优秀的主题，首页拖拽布局，高级筛选，自带会员生态系统，超全支付接口，你喜欢的样子我都有！
- * 正版唯一购买地址，全自动授权下载使用：https://vip.ylit.cc/
+ * 正版唯一购买地址，全自动授权下载使用：https://ritheme.com/
  * 作者唯一QQ：200933220 （油条）
  * 承蒙您对本主题的喜爱，我们愿向小三一样，做大哥的女人，做大哥网站中最想日的一个。
  * 能理解使用盗版的人，但是不能接受传播盗版，本身主题没几个钱，主题自有支付体系和会员体系，盗版风险太高，鬼知道那些人乱动什么代码，无利不起早。
@@ -265,7 +265,7 @@ add_action('phpmailer_init', 'mail_smtp');
  */
 function cao_redirect_wp_admin()
 {   
-    if ( is_admin() && !current_user_can('editor') && ( !defined( 'DOING_AJAX' ) || !DOING_AJAX ) ) {
+    if ( is_admin() && !current_user_can('contributor') && ( !defined( 'DOING_AJAX' ) || !DOING_AJAX ) ) {
       $current_user = wp_get_current_user();
       if($current_user->roles[0] == get_option('default_role')) {
         wp_safe_redirect( home_url('/user') );
@@ -278,28 +278,197 @@ add_action('init', 'cao_redirect_wp_admin');
 
 // ===== remove edit profile link from admin bar and side menu and kill profile page if not an admin
 if( !current_user_can('manage_options') ) {
-function mytheme_admin_bar_render() {
-    global $wp_admin_bar;
-    $wp_admin_bar->remove_menu('edit-profile', 'user-actions');
-}
-add_action( 'wp_before_admin_bar_render', 'mytheme_admin_bar_render' );
- 
-function stop_access_profile() {
-    if(@IS_PROFILE_PAGE === true) {
-        wp_die( '此页面权限不足，请使用网站管理员账号登录管理' );
+    function mytheme_admin_bar_render() {
+        global $wp_admin_bar;
+        $wp_admin_bar->remove_menu('edit-profile', 'user-actions');
     }
-    remove_menu_page( 'profile.php' );
-    remove_submenu_page( 'users.php', 'profile.php' );
+    add_action( 'wp_before_admin_bar_render', 'mytheme_admin_bar_render' );
+     
+    function stop_access_profile() {
+        if(@IS_PROFILE_PAGE === true) {
+            wp_die( '此页面权限不足！' );
+        }
+        remove_menu_page( 'profile.php' );
+        remove_submenu_page( 'users.php', 'profile.php' );
+    }
+    add_action( 'admin_init', 'stop_access_profile' );
 }
-add_action( 'admin_init', 'stop_access_profile' );
-}
-
 
 if (_cao('is_close_wpreg') || _cao('is_close_wplogin')) {
     
 }
 
+// 普通用户发布文章控制
 
+if ( ! class_exists( 'Restrict_User_Content' ) ) :
+
+    /**
+     * Class Definition
+     */
+    class Restrict_User_Content{
+
+        /**
+         * Construct
+         */
+        function __construct() {
+
+            //Start your custom goodness
+            add_action( 'pre_get_posts',                array( $this, 'ruc_pre_get_posts_media_user_only' ) );
+            add_filter( 'parse_query',                  array( $this, 'ruc_parse_query_useronly' ) );
+            add_filter( 'ajax_query_attachments_args',  array( $this, 'ruc_ajax_attachments_useronly' ) );
+            add_filter( 'views_edit-post',              array( $this, 'ruc_remove_other_users_posts' ) );
+            add_filter( 'views_edit-page',              array( $this, 'ruc_remove_other_users_posts' ) );
+            add_filter( 'admin_footer_text', array( $this, 'my_admin_footer_text' ) );
+            add_filter( 'update_footer', array( $this, 'my_admin_footer_text' ) );
+            add_action( 'admin_menu', array( $this, 'n_a_remove_menu_page' ) );
+            add_action( 'wp_before_admin_bar_render', array( $this, 'remove_admin_bar_links' ) );
+            add_action( 'edit_form_after_title', array( $this, 'below_the_title' ) );
+
+
+        }
+
+        function below_the_title() {
+            if (!current_user_can( 'manage_options' ) && _cao('is_postpay_ref_float','1') && _cao('site_postpay_ref_float','0.1') ) {
+                $ra = _cao('site_postpay_ref_float','0.1');
+                $ra = $ra*100;
+                echo '<h5 style="color: #FF9800;padding: 0;margin-top: 0;">提示：本站投稿可获得佣金提成，当有人购买您发布的文章资源后，销售价格的'.$ra.'%将直接转入您的<a target="_blank" href="'.esc_url(home_url('/user?action=ref')).'"> 佣金收益</a></h5>';
+            }
+            
+        }
+
+        function remove_admin_bar_links() {
+            if (! current_user_can( 'manage_options' ) && is_admin()) {
+                global $wp_admin_bar;
+                $wp_admin_bar->remove_menu('csf-caozhuti');  // 移除链接
+                $wp_admin_bar->remove_menu('my-account');  // 移除链接
+                $wp_admin_bar->remove_menu('wp-logo');  // 移除链接
+            }
+        }
+
+
+        /*not_administrator_remove_menu_page*/ 
+        function n_a_remove_menu_page(){ 
+            if (! current_user_can( 'manage_options' ) && is_admin()) {
+                remove_menu_page('index.php'); 
+                remove_menu_page('tools.php'); 
+                remove_menu_page('edit-comments.php'); 
+                remove_menu_page('rizhutiplus'); 
+            }
+
+            
+        }
+
+        function my_admin_footer_text(){
+            return '';
+        }
+        function my_update_footer()
+        {
+            return '';
+        }
+
+        //=================
+        // ACTION CALLBACKS
+        //=================
+
+        /**
+         * Augment the query on the media page
+         *
+         * This is tied into the settings to show media uploaded by the user and
+         * any others as indicated in the settings panel. This will allow site admins to create
+         * a sandbox with images that are available to all users.
+         */
+        function ruc_pre_get_posts_media_user_only( $query ) {
+
+            if ( strpos( $_SERVER['REQUEST_URI'], '/wp-admin/upload.php' ) !== false ) {
+
+                if ( ! current_user_can( 'update_core' ) ) {
+                    $query->set( 'author__in', $this->ruc_create_list_of_user_ids() );
+                }
+            }
+        }
+
+
+        //=================
+        // FILTER CALLBACKS
+        //=================
+
+
+        /**
+         * Only show the posts for the current non-admin user.
+         *
+         * Great function written by Sarah Gooding.
+         * Slightly updated to use wp_get_current_user() instead of globalizing the $current_user variable
+         *
+         * @link {http://premium.wpmudev.org/blog/how-to-limit-the-wordpres-posts-screen-to-only-show-authors-their-own-posts/}
+         */
+        function ruc_parse_query_useronly( $wp_query ) {
+            if ( strpos( $_SERVER['REQUEST_URI'], '/wp-admin/edit.php' ) !== false ) {
+                if ( ! current_user_can( 'update_core' ) ) {
+                    $current_user = wp_get_current_user();
+                    $wp_query->set( 'author', $current_user->ID );
+                }
+            }
+        }
+
+
+        /**
+         * Filter the media uploader similar to the pre_get_post
+         */
+        function ruc_ajax_attachments_useronly( $query ) {
+
+            if ( ! current_user_can( 'update_core' ) ) {
+                $users = $this->ruc_create_list_of_user_ids();
+
+                $query['author__in'] = $users;
+            }
+
+            return $query;
+        }
+
+
+
+
+        /**
+         * Parse the array for the user list
+         * @return array An array of all of the allows user ID and the current user
+         */
+        private function ruc_create_list_of_user_ids() {
+
+            $current_user = wp_get_current_user();
+            //create the array from the string
+            $users = explode( ',', '' );
+            //add the the current user id to the beginning
+            array_unshift( $users , $current_user->ID );
+            return $users;
+        }
+
+
+        /**
+         * If we're not an admin, we only want to see the Mine count for posts
+         *
+         * @param $views array The list of post counts for each status type
+         *
+         * @return mixed
+         */
+        public function ruc_remove_other_users_posts( $views ) {
+            if ( ! current_user_can( 'manage_options' ) ) {
+                foreach ( $views as $key => $data ) {
+                    if ( 'mine' !== $key ) {
+                        unset( $views[ $key ] );
+                    }
+                }
+            }
+            return $views;
+        }
+
+
+    }
+
+
+    // Create an instance of the class.
+    new Restrict_User_Content();
+
+endif;
 
 /**
  * [cao_handle_banned_user 对封禁账户处理]

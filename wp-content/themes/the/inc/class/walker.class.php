@@ -2,7 +2,7 @@
 if (!defined('ABSPATH')) {die;} // Cannot access directly.
 /**
  * RiPro是一个优秀的主题，首页拖拽布局，高级筛选，自带会员生态系统，超全支付接口，你喜欢的样子我都有！
- * 正版唯一购买地址，全自动授权下载使用：https://vip.ylit.cc/
+ * 正版唯一购买地址，全自动授权下载使用：https://ritheme.com/
  * 作者唯一QQ：200933220 （油条）
  * 承蒙您对本主题的喜爱，我们愿向小三一样，做大哥的女人，做大哥网站中最想日的一个。
  * 能理解使用盗版的人，但是不能接受传播盗版，本身主题没几个钱，主题自有支付体系和会员体系，盗版风险太高，鬼知道那些人乱动什么代码，无利不起早。
@@ -42,7 +42,12 @@ class Cao_Walker_Nav_Menu extends Walker_Nav_Menu
         $classes   = empty($item->classes) ? array() : (array) $item->classes;
         $classes[] = 'menu-item-' . $item->ID;
 
-        if ($depth == 0 && $this->mega && ($item->object == 'category' || $item->object == 'post_tag') && ( in_array('menu-item-mega', $classes) || in_array('menu-item-ripro', $classes) )) {
+        $is_catmenu = get_post_meta( $item->ID, 'is_catmenu', true );
+        if (!empty($is_catmenu)) {
+            $classes[] = 'menu-item-mega';
+        }
+
+        if ($depth == 0 && $this->mega && ($item->object == 'category' || $item->object == 'post_tag') && ( in_array('menu-item-mega', $classes))) {
             $classes[] = 'menu-item-has-children';
         }
 
@@ -69,6 +74,12 @@ class Cao_Walker_Nav_Menu extends Walker_Nav_Menu
                 $attributes .= ' ' . $attr . '="' . $value . '"';
             }
         }
+        $menu_icon = get_post_meta( $item->ID, 'menu_icon', true );
+        if( ! empty( $menu_icon ) ) {
+            $item->title = '<span><i class="'. $menu_icon .'"></i> ' . $item->title .'</span>';
+        }
+
+
 
         $item_output = $args->before;
         $item_output .= '<a' . $attributes . '>';
@@ -76,7 +87,7 @@ class Cao_Walker_Nav_Menu extends Walker_Nav_Menu
         $item_output .= '</a>';
         $item_output .= $args->after;
 
-        if ($depth == 0 && $this->mega && ($item->object == 'category' || $item->object == 'post_tag') && ( in_array('menu-item-mega', $classes) || in_array('menu-item-ripro', $classes) ) ) {
+        if ($depth == 0 && $this->mega && ($item->object == 'category' || $item->object == 'post_tag') && ( in_array('menu-item-mega', $classes)) ) {
             $term_id   = $item->object_id;
             $term_args = array('posts_per_page' => 10);
             switch ($item->object) {

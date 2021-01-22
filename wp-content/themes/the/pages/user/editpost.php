@@ -6,7 +6,7 @@ $author_id = get_post_field( 'post_author', $post_id );
 
 $post = get_post($post_id);
 
-if(!$post || (!current_user_can('edit_posts') && $author_id != $user_id)) { ?>
+if(!$post || (!current_user_can('publish_posts') && $author_id != $user_id)) { ?>
     <!-- //不存在的文章或普通编辑以下权限用户最多只能编辑自己的文章 -->
     <div class="col-xs-12 col-sm-12 col-md-9">
         <form class="mb-0">
@@ -31,7 +31,7 @@ $cao_downurl = get_post_meta($post_id,'cao_downurl',true) ? : '';
 
 <div class="col-xs-12 col-sm-12 col-md-9">
     <form class="mb-0">
-    <?php if(current_user_can('edit_posts')): ?>
+    <?php if(current_user_can('publish_posts')): ?>
         <div class="form-box">
             <div class="row">
                 <div class="col-xs-12 col-sm-12 col-md-12">

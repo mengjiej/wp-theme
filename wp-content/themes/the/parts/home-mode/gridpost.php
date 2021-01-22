@@ -16,7 +16,7 @@
   );
 ?>
 
-<div class="section bgcolor-fff lazyload" data-bg="<?php echo esc_url( $mode_gridpost['bgimg'] ); ?>">
+<div class="section gridpost-bg bgcolor-fff lazyload" data-bg="<?php echo esc_url( $mode_gridpost['bgimg'] ); ?>">
   <div class="container">
     <div class="module gridpost row">
       

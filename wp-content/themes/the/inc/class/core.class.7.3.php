@@ -1,6 +1,5 @@
 <?php
-
-// V8WP 破解去后门
+//勿改动 
 add_action("csf__caozhuti_options_save_after", "ripro_options_save_after");
 add_action("wp_ajax_ripro_ajax_check", "ripro_ajax_check");
 add_action("wp_ajax_nopriv_ripro_ajax_check", "ripro_ajax_check");
@@ -449,14 +448,14 @@ class Reflog
 		
 		$offset=($params['paged']-1)*$params['perpage'];
 		
-		$a8ku = "SELECT * FROM " . $down_log_table_name . " WHERE 1=1 ";
+		$v8wp = "SELECT * FROM " . $down_log_table_name . " WHERE 1=1 ";
 		if($params['user_id'] != '0' && $params['user_id'] !=''){
-			$a8ku .= "AND user_id='" . $params['user_id'] . "' ";
+			$v8wp .= "AND user_id='" . $params['user_id'] . "' ";
 		}		
-		$a8ku .= "ORDER BY id DESC ";
-		$a8ku .= "limit " . $offset . "," . $params['perpage'];
+		$v8wp .= "ORDER BY id DESC ";
+		$v8wp .= "limit " . $offset . "," . $params['perpage'];
 		
-		$results = $wpdb->get_results($a8ku, "OBJECT");
+		$results = $wpdb->get_results($v8wp, "OBJECT");
 		if (!$results) 
 		{
 			return null;
@@ -509,7 +508,7 @@ class PostPay
 			return false;
 		}
 	}
-	public function a8ku()
+	public function v8wp()
 	{
 		if(getenv('HTTP_CLIENT_IP') && strcasecmp(getenv('HTTP_CLIENT_IP'), 'unknown')) {
 			$ip = getenv('HTTP_CLIENT_IP');
@@ -528,7 +527,7 @@ class PostPay
 		global $wpdb;
 		global $down_log_table_name;
 		try{
-			$wpdb->insert($down_log_table_name, array("user_id"=>$this->user_id,"down_id"=>$this->post_id,"ip"=>$this->a8ku(),"create_time"=>time()));
+			$wpdb->insert($down_log_table_name, array("user_id"=>$this->user_id,"down_id"=>$this->post_id,"ip"=>$this->v8wp(),"create_time"=>time()));
 			return true;
 		}catch(Exception $e){
 			return false;
@@ -684,29 +683,21 @@ class RiProPayAuth
 	}
 }
 
-class CaoCache
-{
-	public function __construct() 
-	{
+class CaoCache{
+	public function __construct() {
 	}
 	
-	static public function is()
-	{
+	static public function is(){
 		return false;
 	}
 	
-	static public function get($_the_cache_key)
-	{
+	static public function get($_the_cache_key){
 		return false;
 	}
-	static public function set($_the_cache_key,$value)
-	{
+	static public function set($_the_cache_key,$value){
 		return true;
 	}
-	
-	
 }
-
 
 class RiProPay
 {

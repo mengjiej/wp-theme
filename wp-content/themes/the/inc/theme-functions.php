@@ -2,7 +2,7 @@
 if (!defined('ABSPATH')) {die;} // Cannot access directly.
 /**
  * RiPro是一个优秀的主题，首页拖拽布局，高级筛选，自带会员生态系统，超全支付接口，你喜欢的样子我都有！
- * 正版唯一购买地址，全自动授权下载使用：https://vip.ylit.cc/
+ * 正版唯一购买地址，全自动授权下载使用：https://ritheme.com/
  * 作者唯一QQ：200933220 （油条）
  * 承蒙您对本主题的喜爱，我们愿向小三一样，做大哥的女人，做大哥网站中最想日的一个。
  * 能理解使用盗版的人，但是不能接受传播盗版，本身主题没几个钱，主题自有支付体系和会员体系，盗版风险太高，鬼知道那些人乱动什么代码，无利不起早。
@@ -274,6 +274,7 @@ function cao_lazy_content_images($content)
         return $content;
     }
     return preg_replace_callback('/(<\s*img[^>]+)(src\s*=\s*"[^"]+")([^>]+>)/i', function($matches){
+        $class_attr = '';
         if (!preg_match('/class\s*=\s*"/i', $matches[0])) {
             $class_attr = 'class="" ';
         }
@@ -285,7 +286,6 @@ function cao_lazy_content_images($content)
 }
 if (_cao('cao_lazy_content_images',false)) add_filter('the_content', 'cao_lazy_content_images', 99);
 endif;
-
 
 
 function cao_compare_options( $global, $override ) {
@@ -394,10 +394,13 @@ function _the_head()
     _post_views_record();
     $css_str    = _cao('web_css');
     if ($css_str) {
-        echo '<style>'. $css_str .'</style>';
+        echo '<style type="text/css">'. $css_str .'</style>';
     }
 }
 add_action('wp_head', '_the_head');
+
+
+
 
 /**
  * [_keywords SEO关键词优化]
@@ -515,6 +518,40 @@ function _description()
     echo "<meta name=\"description\" content=\"$description\">\n";
 }
 
+// Open Graph
+function meta_og() {
+    global $post;
+
+    if (is_single()) {
+        $img_src = _get_post_thumbnail_url($post);
+        $excerpt      = strip_tags($post->post_content);
+        $excerpt_more = '';
+        if (strlen($excerpt) > 155) {
+            $excerpt      = substr($excerpt, 0, 155);
+            $excerpt_more = ' ...';
+        }
+        $excerpt      = str_replace('"', '', $excerpt);
+        $excerpt      = str_replace("'", '', $excerpt);
+        $excerptwords = preg_split('/[\n\r\t ]+/', $excerpt, -1, PREG_SPLIT_NO_EMPTY);
+        array_pop($excerptwords);
+        $excerpt = implode(' ', $excerptwords) . $excerpt_more;
+        ?>
+        <meta property="og:title" content="<?php echo the_title(); ?>">
+        <meta property="og:description" content="<?php echo $excerpt; ?>">
+        <meta property="og:type" content="article">
+        <meta property="og:url" content="<?php echo the_permalink(); ?>">
+        <meta property="og:site_name" content="<?php echo get_bloginfo('name'); ?>">
+        <meta property="og:image" content="<?php echo $img_src; ?>">
+    <?php
+    } else {
+        return;
+    }
+}
+//是否开启meta_og协议
+if(_cao('is_post_meta_og')){
+    add_action('wp_head', 'meta_og', 5);
+}
+
 
 function _get_tax_meta($id = 0, $field = '')
 {
@@ -603,26 +640,15 @@ if (_cao('is_close_wpreg') || _cao('is_close_wplogin')) {
 /**
  * [getQrcode 生产二维码]
  * @Author   Dadong2g
- * @DateTime 2019-05-28T13:17:10+0800
+ * @DateTime 2020-09-29T19:22:06+0800
  * @param    [type]                   $url [description]
  * @return   [type]                        [description]
  */
 function getQrcode($url)
 {
-    //引入phpqrcode类库
-    require_once get_template_directory() . '/inc/class/qrcode.class.php';
-    $errorCorrectionLevel = 'L'; //容错级别
-    $matrixPointSize      = 6; //生成图片大小
-    ob_start();
-    QRcode::png($url, false, $errorCorrectionLevel, $matrixPointSize, 2);
-    $data = ob_get_contents();
-    ob_end_clean();
-
-    $imageString = base64_encode($data);
-    header("content-type:application/json; charset=utf-8");
-    return 'data:image/jpeg;base64,'.$imageString;
+    $api_url = get_template_directory_uri() . '/inc/plugins/qrcode.php?data=';
+    return $api_url . $url;
 }
-
 
 /*
 Gravatar 自定义头像 Hook
@@ -677,7 +703,7 @@ function cao_avatar_hook($avatar, $id_or_email, $size, $default, $alt,$str='img'
         }
         if ($str =='img') {
             if (is_admin()) {
-                $avatar = "<img alt='{$alt}' src='{$avatar_url}' class='avatar avatar-{$size} photo {$_user_avatar_type}' height='{$size}' width='{$size}' />";
+                $avatar = "<img alt='{$alt}' data-src='{$avatar_url}' class='lazyload avatar avatar-{$size} photo {$_user_avatar_type}' height='{$size}' width='{$size}' />";
             }else{
                $avatar = "<img alt='{$alt}' data-src='{$avatar_url}' class='lazyload avatar avatar-{$size} photo {$_user_avatar_type}' height='{$size}' width='{$size}' />"; 
             }
@@ -837,6 +863,8 @@ function _get_user_avatar($user_email = '', $src = false, $size = 50)
     }
 
 }
+
+
 
 
 // 文章是否下载资源文章
@@ -1014,10 +1042,12 @@ function _get_post_thumbnail_url($post = null)
     if ($post === null) {
         global $post;
     }
+    //获取默认缩略图大小设置
+    $thumbnail_def_get_size = _cao('thumbnail_def_get_size','full');
     // cao_is_gif()
     if (has_post_thumbnail($post)) {
         //如果有特色缩略图，则输出缩略图地址
-        $image = wp_get_attachment_image_src( get_post_thumbnail_id($post->ID), 'full' );
+        $image = wp_get_attachment_image_src( get_post_thumbnail_id($post->ID), $thumbnail_def_get_size );
         $post_thumbnail_src = $image[0];
     } else {
         $post_thumbnail_src = '';
@@ -1478,6 +1508,9 @@ function _get_excerpt($limit = 40, $after = '...')
  */
 function _get_category_tags($args)
 {
+    if (empty($args['categories'])) {
+        return false;
+    }
     global $wpdb;
     $tags = $wpdb->get_results
         ("
@@ -1500,7 +1533,7 @@ function _get_category_tags($args)
     ");
     $count = 0;
 
-    if ($tags) {
+    if (!empty($tags)) {
         foreach ($tags as $tag) {
             $mytag[$count] = get_term_by('id', $tag->tag_id, 'post_tag');
             $count++;
@@ -1722,7 +1755,7 @@ function cao_admin_pagenavi($total_count, $number_per_page = 20)
 
     $base_url = add_query_arg($_GET, admin_url('admin.php'));
 
-    $total_pages = ceil($total_count / $number_per_page);
+    @$total_pages = ceil($total_count / $number_per_page);
 
     $first_page_url = $base_url . '&amp;paged=1';
     $last_page_url  = $base_url . '&amp;paged=' . $total_pages;
@@ -1813,10 +1846,9 @@ function go_template_redirect()
 }
 
 // 下载文件缓存
-function _download_file($file_dir,$vip_stat)
+function _download_file($file_dir)
 {
-    
-    $html_donw = '<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=0.7, user-scalable=0"><title>下载 - 资源小站</title><style type="text/css"> 
+        $html_donw = '<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=0.7, user-scalable=0"><title>下载 - 资源小站</title><style type="text/css"> 
     #div_background{
         overflow: hidden;
         background-size: cover;
@@ -1903,7 +1935,10 @@ function _download_file($file_dir,$vip_stat)
     font-size: large;
 }</style></head><body link="#33CCCC" alink="blue" vlink="#3366FF"><div id="div_background"></div><div align="center" id="div_ym"><div align="center" id="div_xsqy"><div id="div_nr">';
 
-    //*[资源名*|资源说明*|解压密码]*【vip|网盘名1|http://|提取码】|#|【网盘名2|http://|提取码】
+
+    
+    
+    $file_dir = urldecode($file_dir);
     
     if (substr($file_dir,0,2) == '*[') {
         $dwp = $file_dir;
@@ -1957,13 +1992,13 @@ function _download_file($file_dir,$vip_stat)
         exit;
     }
     
-    
     // 远程文件异步下载 直接跳转URL
     if (substr($file_dir, 0, 7) == 'http://' || substr($file_dir, 0, 8) == 'https://' || substr($file_dir, 0, 10) == 'thunder://' || substr($file_dir, 0, 7) == 'magnet:' || substr($file_dir, 0, 5) == 'ed2k:') {
         $file_path = chop($file_dir);
-        header("Location: ".$file_path);
+        echo "<script type='text/javascript'>window.location='$file_path';setTimeout(function(){window.close()},5000)</script>";
         exit;
     }
+
     // 本地缓冲下载文件
     $file_dir = ABSPATH . '/' . chop($file_dir);
     if (!file_exists($file_dir)) {
@@ -2686,6 +2721,15 @@ function _cao_get_pay_type_html(){
         $alipay_type = 6;
     }
     
+    if (_cao('is_xunhupay_ali')) {
+        $alipay = true;
+        $alipay_type = 9;
+    }
+    if (_cao('is_xunhupay_wx')) {
+        $weixinpay = true;
+        $wxpay_type = 10;
+    }
+    
     if (_cao('is_alipay')) {
         $alipay = true;
         $alipay_type = 1;
@@ -2812,5 +2856,29 @@ function is_weixin_view(){
     } else {
         return false;
     }
+}
+
+
+add_action('ripro_echo_ads', 'ripro_echo_ads', 10, 1);
+function ripro_echo_ads($slug) {
+    if (defined('DOING_AJAX') && DOING_AJAX) {
+        return false;
+    }
+
+    $is_ads     = _cao($slug);
+    $ads_pc     = _cao($slug . '_pc');
+    $ads_mobile = _cao($slug . '_mobile');
+    // var_dump($is_ads);die;
+    $html = '';
+    if (wp_is_mobile() && $is_ads && isset($ads_mobile)) {
+        $html = '<div class="ripro_gg_wrap mobile">';
+        $html .= $ads_mobile;
+        $html .= '</div>';
+    } else if ($is_ads && isset($ads_pc)) {
+        $html = '<div class="ripro_gg_wrap pc">';
+        $html .= $ads_pc;
+        $html .= '</div>';
+    }
+    echo $html;
 }
 
